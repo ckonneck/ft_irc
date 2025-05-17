@@ -1,7 +1,7 @@
 NAME = ircserv
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -std=c++98 -g
-SRCS =  main.cpp
+SRCS =  main.cpp functions.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(NAME)

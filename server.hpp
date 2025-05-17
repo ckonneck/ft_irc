@@ -7,6 +7,42 @@
 #include <fcntl.h>
 #include <vector>
 
+class Chatroom;
+
+class OP
+{
+    public:
+        OP(std::string &nickname, std::string &password);
+        ~OP();
+        void Kick(std::string &target);
+        void Invite(std::string &whotoinv);
+        void Topic(std::string &topicstring, Chatroom &name);
+        void Mode(char &modeChar);
+    protected:
+        bool _isOP;
+        std::string _nickname;
+        std::string _password;
+};
+
+class User : public OP
+{
+    public:
+        User(std::string &nickname, std::string &password);
+        ~User();
+};
+
+class Chatroom
+{
+    public:
+        void setTopic(std::string &topicstring);
+        void displayTopic();
+    private:
+        std::string _password;
+        std::string _topic;
+        std::string channelname;
+        std::string channelmode;
+};
+
 void newclient(int &server_fd, std::vector<pollfd> &fds);
 void messagehandling(std::vector<pollfd> &fds, size_t &i);
 bool serverexit();
