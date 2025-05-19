@@ -8,7 +8,7 @@
 #include <vector>
 #include <cstring>
 #include <cstdlib>
-
+#include <sstream>
 class Chatroom;
 
 class OP
@@ -59,4 +59,5 @@ void welcomemessage();
 void messagehandling(std::vector<pollfd> &fds, size_t i);
 void validatePort(char *argv);
 bool isDigit(char *strnum);
-
+void commandParsing(char *messagebuffer);
+std::vector<std::string> split(const std::string &input, char delimiter);
