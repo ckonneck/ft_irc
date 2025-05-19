@@ -1,0 +1,49 @@
+#include "Server.hpp"
+
+void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
+{
+    for (size_t i = 0; i < fds.size(); ++i)
+    {
+        if (fds[i].revents & POLLIN)
+        {
+            // Handle input from server terminal
+            if (fds[i].fd == STDIN_FILENO)
+            {
+                if(serverexit() == true)
+                {
+                    running = false;
+                    break;
+                }
+            }
+            else if (fds[i].fd == server_fd)//new client connecting
+            {
+                newclient(server_fd, fds);
+            }
+            else
+            {
+                messagehandling(fds, i);
+            }
+        }
+    }
+}
+
+void welcomemessage()
+{
+    std::cout << "server-chan has been started UwU" << std::endl;
+    std::cout << "type exit to exit UwU" << std::endl;
+    std::cout << "if you wanna connect to this, the easiest way is to " << std::endl;
+    std::cout << "open another cmdwindow and type: telnet localhost 6667" << std::endl;
+    std::cout << "have fun and don't be a mean cookie UwU" << std::endl;
+}
+bool serverexit()
+{
+    std::string input;
+    std::getline(std::cin, input);
+    if (input == "exit")
+    {
+        std::cout << "Server shutting down.\n";
+        return true;
+    }
+    else
+        return false;
+}

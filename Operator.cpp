@@ -1,5 +1,3 @@
-#include "server.hpp"
-
 OP::OP(std::string &nickname, std::string &password) :
             _isOP(true), _nickname(nickname), _password(password)
 {
@@ -9,17 +7,6 @@ OP::OP(std::string &nickname, std::string &password) :
 OP::~OP()
 {
     std::cout << "OP "<< this->_nickname <<" fucked off to somewhere else" <<std::endl;
-}
-
-User::User(std::string &nickname, std::string &password) : OP(nickname, password)
-{
-    this->_isOP = false;
-    std::cout << "User "<< this->_nickname <<" has been created" <<std::endl;
-}
-
-User::~User()
-{
-    std::cout << "User "<< this->_nickname <<" fucked off to somewhere else" <<std::endl;
 }
 
 void OP::Kick(std::string &target)
@@ -57,17 +44,6 @@ void OP::Topic(std::string &topicstring, Chatroom &name)
     }
 }
 
-void Chatroom::displayTopic()
-{
-    std::cout << _topic << std::endl;
-}
-
-void Chatroom::setTopic(std::string &topicstring)
-{
-    this->_topic = topicstring;
-}
-
-
 void OP::Mode(char &modeChar)//could just do a map tbh.
 {
     if (this->_isOP != true)
@@ -101,3 +77,4 @@ void OP::Mode(char &modeChar)//could just do a map tbh.
     else
         std::cout << "get some rights pleb." << std::endl;
 }
+
