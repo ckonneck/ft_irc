@@ -42,6 +42,7 @@ class Chatroom
     public:
         void setTopic(std::string &topicstring);
         void displayTopic();
+		void broadcast();
     private:
         std::string _password;
         std::string _topic;
