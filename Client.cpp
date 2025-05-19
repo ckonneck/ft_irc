@@ -1,5 +1,5 @@
 #include "Client.hpp"
-
+#include "Server.hpp"
 void newclient(int &server_fd, std::vector<pollfd> &fds)
 {
     int client_fd = accept(server_fd, NULL, NULL);

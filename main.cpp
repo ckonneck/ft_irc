@@ -1,15 +1,25 @@
-#include "server.hpp"
-
-int main (void)
-{
-	
+#include "Server.hpp"
+int main (int argc, char **argv)
+{	
+    if (argc == 3)
+    {
+        validatePort(argv[1]);
+    }
+    else
+    {
+        std::cout << "invalid number of arguments." << std::endl;
+        std::cout << "Usage: /ircserv <port> <password>" << std::endl;//password is currently doing nothing yet.
+        exit(1);
+    }
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(6667); //port of our choosing
+    
+    addr.sin_port = htons(std::atoi(argv[1])); //port of our choosing
+
 
     bind(server_fd, (sockaddr*)&addr, sizeof(addr));
     listen(server_fd, SOMAXCONN);
@@ -23,10 +33,10 @@ int main (void)
     fds.push_back(server_pollfd); // for incoming client connections
 
     bool running = true;
-
+    
+    welcomemessage();
     while (running)
     {
-        welcomemessage();
         int activity = poll(fds.data(), fds.size(), -1);
         if (activity < 0)
         {

@@ -1,3 +1,5 @@
+#include "Server.hpp"
+
 OP::OP(std::string &nickname, std::string &password) :
             _isOP(true), _nickname(nickname), _password(password)
 {

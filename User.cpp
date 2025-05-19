@@ -1,3 +1,5 @@
+#include "Server.hpp"
+
 
 User::User(std::string &nickname, std::string &password) : OP(nickname, password)
 {
