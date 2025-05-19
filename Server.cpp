@@ -47,3 +47,21 @@ bool serverexit()
     else
         return false;
 }
+void messagehandling(std::vector<pollfd> &fds, size_t &i)
+{
+    char messagebuffer[2024];
+    int n = recv(fds[i].fd, messagebuffer, sizeof(messagebuffer) - 1, 0);
+    if (n <= 0)
+    {
+        std::cout << "Client disconnected: FD " << fds[i].fd << "\n";
+        close(fds[i].fd);
+        fds.erase(fds.begin() + i);
+        --i;
+    }
+    else
+    {
+        //insert command parsing
+        messagebuffer[n] = '\0';
+        std::cout << "Client " << fds[i].fd << ": " << messagebuffer;
+    }
+}
