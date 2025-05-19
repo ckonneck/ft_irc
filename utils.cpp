@@ -35,3 +35,5 @@ bool isDigit(char *strnum)
 	}
 	return true;
 }
+
+

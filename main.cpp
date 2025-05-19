@@ -1,4 +1,8 @@
 #include "Server.hpp"
+
+// client to use irssi
+
+
 int main (int argc, char **argv)
 {	
     if (argc == 3)

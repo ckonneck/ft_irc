@@ -69,35 +69,35 @@ void messagehandling(std::vector<pollfd> &fds, size_t i)
 }
 
 
-void commandParsing(char *messagebuffer)
-{
-    std::string mBuf(messagebuffer);
-    std::cout << "the command is " << mBuf << std::endl;
-    std::vector<std::string> mVec = split(mBuf, ' ');
-    if (mBuf.find("/KICK") == 0 && mVec.size() > 1)
-    {
-        std::cout << "found /KICK on position 0" << std::endl;
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-    }
-    if (mBuf.find("/JOIN") == 0 && mVec.size() > 1)
-    {
-        std::cout << "found /JOIN on position 0" << std::endl;
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-    }
-    if (mBuf.find("/INVITE") == 0 && mVec.size() > 1)
-    {
-        std::cout << "found /INVITE on position 0" << std::endl;
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-    }
-    if (mBuf.find("/TOPIC") == 0 && mVec.size() > 1)
-    {
-        std::cout << "found /TOPIC on position 0" << std::endl;
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        //to pass full topic, should use the full vector minus the first word
-        //which will be /TOPIC
-    }
+// void commandParsing(char *messagebuffer)
+// {
+//     std::string mBuf(messagebuffer);
+//     std::cout << "the command is " << mBuf << std::endl;
+//     std::vector<std::string> mVec = split(mBuf, ' ');
+//     if (mBuf.find("/KICK") == 0 && mVec.size() > 1)
+//     {
+//         std::cout << "found /KICK on position 0" << std::endl;
+//         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+//     }
+//     if (mBuf.find("/JOIN") == 0 && mVec.size() > 1)
+//     {
+//         std::cout << "found /JOIN on position 0" << std::endl;
+//         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+//     }
+//     if (mBuf.find("/INVITE") == 0 && mVec.size() > 1)
+//     {
+//         std::cout << "found /INVITE on position 0" << std::endl;
+//         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+//     }
+//     if (mBuf.find("/TOPIC") == 0 && mVec.size() > 1)
+//     {
+//         std::cout << "found /TOPIC on position 0" << std::endl;
+//         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+//         //to pass full topic, should use the full vector minus the first word
+//         //which will be /TOPIC
+//     }
 
-}
+// }
 
 
 std::vector<std::string> split(const std::string &input, char delimiter) {
