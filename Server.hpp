@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <sstream>
+#include <unistd.h>
 class Chatroom;
 
 class OP
@@ -35,6 +36,8 @@ class User : public OP
     public:
         User(std::string &nickname, std::string &password);
         ~User();
+        static void newclient(int &server_fd, std::vector<pollfd> &fds);
+        
 };
 
 class Chatroom
@@ -59,5 +62,5 @@ void welcomemessage();
 void messagehandling(std::vector<pollfd> &fds, size_t i);
 void validatePort(char *argv);
 bool isDigit(char *strnum);
-void commandParsing(char *messagebuffer);
+void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i);
 std::vector<std::string> split(const std::string &input, char delimiter);

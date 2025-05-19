@@ -17,7 +17,7 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             }
             else if (fds[i].fd == server_fd)//new client connecting
             {
-                newclient(server_fd, fds);
+                User::newclient(server_fd, fds);
             }
             else
             {
@@ -47,6 +47,25 @@ bool serverexit()
     else
         return false;
 }
+
+void send_to_client(int client_fd, const std::string& message)
+{
+    std::string msg = message + "\r\n";
+    send(client_fd, msg.c_str(), msg.length(), 0);
+}
+
+void join_channel(int client_fd, const std::string& nickname, const std::string& channel) {
+    // Simulate JOIN message
+    send_to_client(client_fd, ":" + nickname + "!" + nickname + "@localhost JOIN :" + channel);
+
+    // RPL_NAMREPLY (353): list of users in channel
+    send_to_client(client_fd, ":localhost 353 " + nickname + " = " + channel + " :" + nickname);
+
+    // RPL_ENDOFNAMES (366): end of names list
+    send_to_client(client_fd, ":localhost 366 " + nickname + " " + channel + " :End of /NAMES list.");
+}
+
+
 void messagehandling(std::vector<pollfd> &fds, size_t i)
 {
     char messagebuffer[2024];
@@ -60,7 +79,7 @@ void messagehandling(std::vector<pollfd> &fds, size_t i)
     }
     else
     {
-        commandParsing(messagebuffer);
+        commandParsing(messagebuffer, fds, i);
 
         //insert command parsing
         messagebuffer[n] = '\0';
@@ -68,36 +87,37 @@ void messagehandling(std::vector<pollfd> &fds, size_t i)
     }
 }
 
+void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
+{
+    std::string mBuf(messagebuffer);
+    std::cout << "the command is " << mBuf << std::endl;
+    std::vector<std::string> mVec = split(mBuf, ' ');
+    if (mBuf.find("/KICK") == 0 && mVec.size() > 1)
+    {
+        std::cout << "found /KICK on position 0" << std::endl;
+        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+    }
+    if (mBuf.find("/JOIN") == 0 && mVec.size() > 1)
+    {
+        std::cout << "found /JOIN on position 0" << std::endl;
 
-// void commandParsing(char *messagebuffer)
-// {
-//     std::string mBuf(messagebuffer);
-//     std::cout << "the command is " << mBuf << std::endl;
-//     std::vector<std::string> mVec = split(mBuf, ' ');
-//     if (mBuf.find("/KICK") == 0 && mVec.size() > 1)
-//     {
-//         std::cout << "found /KICK on position 0" << std::endl;
-//         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-//     }
-//     if (mBuf.find("/JOIN") == 0 && mVec.size() > 1)
-//     {
-//         std::cout << "found /JOIN on position 0" << std::endl;
-//         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-//     }
-//     if (mBuf.find("/INVITE") == 0 && mVec.size() > 1)
-//     {
-//         std::cout << "found /INVITE on position 0" << std::endl;
-//         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-//     }
-//     if (mBuf.find("/TOPIC") == 0 && mVec.size() > 1)
-//     {
-//         std::cout << "found /TOPIC on position 0" << std::endl;
-//         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-//         //to pass full topic, should use the full vector minus the first word
-//         //which will be /TOPIC
-//     }
+        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+        join_channel(fds[i].fd, "bob", "general");
+    }
+    if (mBuf.find("/INVITE") == 0 && mVec.size() > 1)
+    {
+        std::cout << "found /INVITE on position 0" << std::endl;
+        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+    }
+    if (mBuf.find("/TOPIC") == 0 && mVec.size() > 1)
+    {
+        std::cout << "found /TOPIC on position 0" << std::endl;
+        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+        //to pass full topic, should use the full vector minus the first word
+        //which will be /TOPIC
+    }
 
-// }
+}
 
 
 std::vector<std::string> split(const std::string &input, char delimiter) {
