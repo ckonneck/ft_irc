@@ -24,6 +24,10 @@ class OP
         bool _isOP;
         std::string _nickname;
         std::string _password;
+		std::string _hostname;
+		std::string _realname;
+		std::string _FD;
+		std::string _auth_state;
 };
 
 class User : public OP
@@ -43,6 +47,7 @@ class Chatroom
         std::string _topic;
         std::string channelname;
         std::string channelmode;
+		int			members_in_room;
 };
 
 void newclient(int &server_fd, std::vector<pollfd> &fds);
