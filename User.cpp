@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include <cerrno>
 
 std::vector<User*> g_mappa;
 User::User(const std::string &nickname,const std::string &password) : _nickname(nickname), _password(password)
@@ -14,18 +15,34 @@ User::~User()
 
 void User::newclient(int &server_fd, std::vector<pollfd> &fds)
 {
-    int client_fd = accept(server_fd, NULL, NULL);
-    if (client_fd >= 0)
-    {   //need a map of clients thats stored somewhere. and correctly free the memory when the user leaves.
-        User *bob = new User("needparsing", "needpassword" );//return the actual one from parsing
-        bob->_FD = client_fd;
-        g_mappa.push_back(bob);
-        fcntl(client_fd, F_SETFL, O_NONBLOCK);
-        pollfd client_pollfd = { client_fd, POLLIN, 0 };
-        fds.push_back(client_pollfd);
-        std::cout << "New client connected: FD nr " << client_fd << "\n";
-        bob->HSwelcome(client_fd);
+    struct sockaddr_in client_addr;
+    socklen_t addrlen = sizeof(client_addr);
+    int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addrlen);
+    if (client_fd < 0) {
+        std::cerr << "[newclient] accept error: " << strerror(errno) << std::endl;
+        return;
     }
+    // Set non-blocking
+    int flags = fcntl(client_fd, F_GETFL, 0);
+    fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
+
+    pollfd pfd;
+    pfd.fd = client_fd;
+    pfd.events = POLLIN;
+    fds.push_back(pfd);
+
+	char buffer[1024];
+            ssize_t n = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+			(void)n;
+            // if (n <= 0) {
+            //     std::cout << "Client disconnected: FD " << client_fd << std::endl;
+            //     close(client_fd);
+            //     fds.erase(fds.begin());
+            // }
+			std::cout << "to parse" << std ::endl << buffer << std::endl;
+	//User *newUser =  new User("non", "init");
+
+    std::cout << "New client connected: FD " << client_fd << std::endl;
 }
 void User::HSwelcome(int &client_fd)
 {
