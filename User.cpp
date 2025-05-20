@@ -52,18 +52,26 @@ void User::HSNick(const std::string &newname)//not yet called anywhere
     send(this->_FD, nickMsg.c_str(), nickMsg.length(), 0);
 
 }
-
 User* findUserByFD(int fd)
 {
+    std::cout << "Starting search for user with FD: " << fd << std::endl;
     for (size_t i = 0; i < g_mappa.size(); ++i)
     {
         User* user = g_mappa[i];
+
+        // Debug print of nickname and FD being checked
+        std::cout << "Checking user: " << user->getNickname()
+                  << " (FD: " << user->getFD() << ")" << std::endl;
+
         if (user->getFD() == fd) {
+            std::cout << "Match found: " << user->getNickname() << std::endl;
             return user;
         }
     }
+    std::cout << "No user found for FD: " << fd << std::endl;
     return NULL;
 }
+
 
 User* findUserByNickname(const std::string& nick)
 {

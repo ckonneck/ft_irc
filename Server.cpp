@@ -56,6 +56,7 @@ void send_to_client(int client_fd, const std::string& message)
 
 void join_channel(int client_fd, const std::string& nickname, const std::string& channel) {
     // Simulate JOIN message
+    std::cout << "debugjoinchannel" << std::endl;
     send_to_client(client_fd, ":" + nickname + "!" + nickname + "@localhost JOIN :" + channel);
 
     // RPL_NAMREPLY (353): list of users in channel
@@ -87,7 +88,8 @@ void messagehandling(std::vector<pollfd> &fds, size_t i)
     }
 }
 
-void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
+void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)//irssi won't recognize any of this.
+                                                                //needs a major rework with jan parsing
 {
     std::string mBuf(messagebuffer);
     std::cout << "the command is " << mBuf << std::endl;
@@ -102,7 +104,7 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         std::cout << "found /JOIN on position 0" << std::endl;
 
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        join_channel(fds[i].fd, NULL, NULL);
+        join_channel(fds[i].fd, "mei", "fong");
     }
     if (mBuf.find("/INVITE") == 0 && mVec.size() > 1)
     {
@@ -121,6 +123,8 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         std::cout << "found /NICK on position 0" << std::endl;
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
         //let jan handle parsing
+        User *nicknamechanger = findUserByFD(fds[i].fd);
+        nicknamechanger->HSNick(mVec[1]);
     }
 
 }
