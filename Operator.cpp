@@ -1,6 +1,6 @@
 #include "Server.hpp"
 
-OP::OP(std::string &nickname, std::string &password) :
+OP::OP(const std::string &nickname,const std::string &password) :
             _isOP(true), _nickname(nickname), _password(password)
 {
     std::cout << "Operator has been created" << std::endl;

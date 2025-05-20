@@ -10,12 +10,15 @@
 #include <cstdlib>
 #include <sstream>
 #include <unistd.h>
+#include <map>
+
+
 class Chatroom;
 
 class OP
 {
     public:
-        OP(std::string &nickname, std::string &password);
+        OP(const std::string &nickname,const std::string &password);
         ~OP();
         void Kick(std::string &target);
         void Invite(std::string &whotoinv);
@@ -27,16 +30,19 @@ class OP
         std::string _password;
 		std::string _hostname;
 		std::string _realname;
-		std::string _FD;
+		int _FD;
 		std::string _auth_state;
+        
 };
 
 class User : public OP
 {
     public:
-        User(std::string &nickname, std::string &password);
+        User(const std::string &nickname, const std::string &password);
         ~User();
         static void newclient(int &server_fd, std::vector<pollfd> &fds);
+        void HSwelcome(int &client_fd);
+        void HSNick(int &client_fd);
         
 };
 
@@ -54,7 +60,6 @@ class Chatroom
 		int			members_in_room;
 };
 
-void newclient(int &server_fd, std::vector<pollfd> &fds);
 bool serverexit();
 void cleanup(std::vector<pollfd> &fds);
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd);

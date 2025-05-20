@@ -1,7 +1,7 @@
 #include "Server.hpp"
 
-
-User::User(std::string &nickname, std::string &password) : OP(nickname, password)
+std::map<int, User*> mappa;
+User::User(const std::string &nickname,const std::string &password) : OP(nickname, password)
 {
     this->_isOP = false;
     std::cout << "User "<< this->_nickname <<" has been created" <<std::endl;
@@ -16,23 +16,39 @@ void User::newclient(int &server_fd, std::vector<pollfd> &fds)
 {
     int client_fd = accept(server_fd, NULL, NULL);
     if (client_fd >= 0)
-    {
+    {   //need a map of clients thats stored somewhere. and correctly free the memory when the user leaves.
+        User *bob = new User("needparsing", "needpassword" );//return the actual one from parsing
+        bob->_FD = client_fd;
+        mappa[client_fd] = bob;
         fcntl(client_fd, F_SETFL, O_NONBLOCK);
         pollfd client_pollfd = { client_fd, POLLIN, 0 };
         fds.push_back(client_pollfd);
         std::cout << "New client connected: FD nr " << client_fd << "\n";
-        std::string nick = "needparsing"; // from client //get ALL THE NECESSARY DETAILS FROM THIS PARSING
-
-        std::string msg1 = ":localhost 001 " + nick + " :Welcome to UWURC server " + nick + "\r\n";
-        send(client_fd, msg1.c_str(), msg1.length(), 0);
-
-        std::string msg2 = ":localhost 002 " + nick + " :Your host is UWUCHAN running version 1.0\r\n";
-        send(client_fd, msg2.c_str(), msg2.length(), 0);
-
-        std::string msg3 = ":localhost 003 " + nick + " :This server was created IMA DA NYA\r\n";
-        send(client_fd, msg3.c_str(), msg3.length(), 0);
-
-        std::string msg4 = ":localhost 004 " + nick + " owo please don't be mean\r\n";
-        send(client_fd, msg4.c_str(), msg4.length(), 0);
+        bob->HSwelcome(client_fd);
     }
+}
+void User::HSwelcome(int &client_fd)
+{
+    std::string nick = "needparsing"; // from client //get ALL THE NECESSARY DETAILS FROM THIS PARSING
+            //including stuff like password and whatnot, then actually create the User();
+    std::string msg1 = ":localhost 001 " + nick + " :Welcome to UWURC server " + nick + "\r\n";
+    send(client_fd, msg1.c_str(), msg1.length(), 0);
+
+    std::string msg2 = ":localhost 002 " + nick + " :Your host is UWUCHAN running version 1.0\r\n";
+    send(client_fd, msg2.c_str(), msg2.length(), 0);
+
+    std::string msg3 = ":localhost 003 " + nick + " :This server was created IMA DA NYA\r\n";
+    send(client_fd, msg3.c_str(), msg3.length(), 0);
+
+    std::string msg4 = ":localhost 004 " + nick + " owo please don't be mean\r\n";
+    send(client_fd, msg4.c_str(), msg4.length(), 0);
+}
+
+void User::HSNick(int &client_fd)
+{
+    std::string oldNick = "oldnick";
+    std::string newNick = "newnick";//parsing job, get new nickname
+    std::string nickMsg = ":" + oldNick + "!user@localhost NICK :" + newNick + "\r\n";
+    send(client_fd, nickMsg.c_str(), nickMsg.length(), 0);
+
 }

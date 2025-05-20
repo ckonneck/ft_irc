@@ -102,7 +102,7 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         std::cout << "found /JOIN on position 0" << std::endl;
 
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        join_channel(fds[i].fd, "bob", "general");
+        join_channel(fds[i].fd, NULL, NULL);
     }
     if (mBuf.find("/INVITE") == 0 && mVec.size() > 1)
     {
