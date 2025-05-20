@@ -59,7 +59,7 @@ class Chatroom
         std::string _topic;
         std::string channelname;
         std::string channelmode;
-		int			members_in_room;
+		std::vector<User*> members_in_room;
 };
 extern std::vector<User*> g_mappa;
 bool serverexit();

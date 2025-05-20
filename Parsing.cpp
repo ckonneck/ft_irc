@@ -3,6 +3,7 @@
 #include <unistd.h>  // for send()
 #include <cstring>   // for strerror()
 #include <iostream>
+#include <algorithm>
 
 static const std::string SERVER_NAME = "irc.42.fr";
 
@@ -71,7 +72,7 @@ ParsedCommand parseIrcCommand(const std::string& rawLine) {
 // 	std::cout << "Param " << i << ": " << cmd.params[i] << std::endl;
 // std::cout << "Trailing: " << cmd.trailing << std::endl;
 
-
+// handle USER-command
 void handleCommand(const ParsedCommand& cmd, Client& client) {
 	std::string c = cmd.command;
 	std::transform(c.begin(), c.end(), c.begin(), ::toupper); // Case-insensitive command
@@ -179,5 +180,50 @@ void handleCommand(const ParsedCommand& cmd, Client& client) {
 	else {
 		std::cout << "[Warning] Unknown command: " << cmd.command << std::endl;
 		sendError(client, "421", cmd.command + " :Unknown command"); // ERR_UNKNOWNCOMMAND
+	}
+}
+
+// handle client connect parsing
+
+// Store temporary data in a map or inside the Client object
+void handleClientConnectParsing(Client& client, const ParsedCommand& cmd) {
+	std::string c = cmd.command;
+	std::transform(c.begin(), c.end(), c.begin(), ::toupper);
+
+	if (c == "PASS") {
+		if (cmd.params.empty()) {
+			sendError(client, "461", "PASS :Not enough parameters");
+			return;
+		}
+		client.tempPass = cmd.params[0];
+		client.hasPass = true;
+	}
+	else if (c == "NICK") {
+		if (cmd.params.empty()) {
+			sendError(client, "431", ":No nickname given");
+			return;
+		}
+		client.tempNick = cmd.params[0];
+		client.hasNick = true;
+	}
+	else if (c == "USER") {
+		if (cmd.params.size() < 4) {
+			sendError(client, "461", "USER :Not enough parameters");
+			return;
+		}
+		client.tempUser = cmd.params[0];
+		client.tempRealname = cmd.trailing;
+		client.hasUser = true;
+	}
+
+	// Once we have all 3, register the user
+	if (client.hasPass && client.hasNick && client.hasUser && !client.isRegistered) {
+		client.user = new User(client.tempNick, client.tempPass);
+		client.isRegistered = true;
+
+		// Send welcome reply
+		sendReply(client, "001", ":Welcome to the IRC server " + client.tempNick);
+		sendReply(client, "002", ":Your host is irc.42.fr");
+		sendReply(client, "003", ":This server was created for 42 ft_irc project");
 	}
 }
