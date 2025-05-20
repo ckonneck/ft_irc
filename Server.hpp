@@ -15,29 +15,7 @@
 
 class Chatroom;
 
-class OP
-{
-    public:
-        OP(const std::string &nickname,const std::string &password);
-        ~OP();
-        void Kick(std::string &target);
-        void Invite(std::string &whotoinv);
-        void Topic(std::string &topicstring, Chatroom &name);
-        void Mode(char &modeChar);
-        int getFD();
-        std::string getNickname();
-    protected:
-        bool _isOP;
-        std::string _nickname;
-        std::string _password;
-		std::string _hostname;
-		std::string _realname;
-		int _FD;
-		std::string _auth_state;
-        
-};
-
-class User : public OP
+class User
 {
     public:
         User(const std::string &nickname, const std::string &password);
@@ -45,7 +23,20 @@ class User : public OP
         static void newclient(int &server_fd, std::vector<pollfd> &fds);
         void HSwelcome(int &client_fd);
         void HSNick(const std::string &newname);
-        
+        void Kick(std::string &target);
+        void Invite(std::string &whotoinv);
+        void Topic(std::string &topicstring, Chatroom &name);
+        void Mode(char &modeChar);
+        int getFD();
+        std::string getNickname();
+    private:
+        bool _isOP;
+        std::string _nickname;
+        std::string _password;
+		std::string _hostname;
+		std::string _realname;
+		int _FD;
+		std::string _auth_state;
 };
 
 class Chatroom

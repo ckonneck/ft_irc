@@ -1,7 +1,7 @@
 #include "Server.hpp"
 
 std::vector<User*> g_mappa;
-User::User(const std::string &nickname,const std::string &password) : OP(nickname, password)
+User::User(const std::string &nickname,const std::string &password) : _nickname(nickname), _password(password)
 {
     this->_isOP = false;
     std::cout << "User "<< this->_nickname <<" has been created" <<std::endl;

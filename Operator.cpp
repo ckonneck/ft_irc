@@ -1,17 +1,6 @@
 #include "Server.hpp"
 
-OP::OP(const std::string &nickname,const std::string &password) :
-            _isOP(true), _nickname(nickname), _password(password)
-{
-    std::cout << "Operator has been created" << std::endl;
-}
-
-OP::~OP()
-{
-    std::cout << "OP "<< this->_nickname <<" fucked off to somewhere else" <<std::endl;
-}
-
-void OP::Kick(std::string &target)
+void User::Kick(std::string &target)
 {
     if (this->_isOP != true)
     {
@@ -21,7 +10,7 @@ void OP::Kick(std::string &target)
     //actually kick
 }
 
-void OP::Invite(std::string &whotoinv)
+void User::Invite(std::string &whotoinv)
 {
     if (this->_isOP != true)
     {
@@ -31,7 +20,7 @@ void OP::Invite(std::string &whotoinv)
     //actually invite
 }
 
-void OP::Topic(std::string &topicstring, Chatroom &name)
+void User::Topic(std::string &topicstring, Chatroom &name)
 {
 
     if (this->_isOP != true)
@@ -46,7 +35,7 @@ void OP::Topic(std::string &topicstring, Chatroom &name)
     }
 }
 
-void OP::Mode(char &modeChar)//could just do a map tbh.
+void User::Mode(char &modeChar)//could just do a map tbh.
 {
     if (this->_isOP != true)
     {
@@ -80,12 +69,12 @@ void OP::Mode(char &modeChar)//could just do a map tbh.
         std::cout << "get some rights pleb." << std::endl;
 }
 
-int OP::getFD()
+int User::getFD()
 {
     return this->_FD;
 }
 
-std::string OP::getNickname()
+std::string User::getNickname()
 {
     return this->_nickname;
 }
