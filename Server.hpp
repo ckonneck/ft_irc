@@ -24,6 +24,8 @@ class OP
         void Invite(std::string &whotoinv);
         void Topic(std::string &topicstring, Chatroom &name);
         void Mode(char &modeChar);
+        int getFD();
+        std::string getNickname();
     protected:
         bool _isOP;
         std::string _nickname;
@@ -42,7 +44,7 @@ class User : public OP
         ~User();
         static void newclient(int &server_fd, std::vector<pollfd> &fds);
         void HSwelcome(int &client_fd);
-        void HSNick(int &client_fd);
+        void HSNick(const std::string &newname);
         
 };
 
@@ -59,7 +61,7 @@ class Chatroom
         std::string channelmode;
 		int			members_in_room;
 };
-
+extern std::vector<User*> g_mappa;
 bool serverexit();
 void cleanup(std::vector<pollfd> &fds);
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd);

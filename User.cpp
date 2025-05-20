@@ -1,6 +1,6 @@
 #include "Server.hpp"
 
-std::map<int, User*> mappa;
+std::vector<User*> g_mappa;
 User::User(const std::string &nickname,const std::string &password) : OP(nickname, password)
 {
     this->_isOP = false;
@@ -19,7 +19,7 @@ void User::newclient(int &server_fd, std::vector<pollfd> &fds)
     {   //need a map of clients thats stored somewhere. and correctly free the memory when the user leaves.
         User *bob = new User("needparsing", "needpassword" );//return the actual one from parsing
         bob->_FD = client_fd;
-        mappa[client_fd] = bob;
+        g_mappa.push_back(bob);
         fcntl(client_fd, F_SETFL, O_NONBLOCK);
         pollfd client_pollfd = { client_fd, POLLIN, 0 };
         fds.push_back(client_pollfd);
@@ -44,11 +44,35 @@ void User::HSwelcome(int &client_fd)
     send(client_fd, msg4.c_str(), msg4.length(), 0);
 }
 
-void User::HSNick(int &client_fd)
+void User::HSNick(const std::string &newname)//not yet called anywhere
 {
-    std::string oldNick = "oldnick";
-    std::string newNick = "newnick";//parsing job, get new nickname
-    std::string nickMsg = ":" + oldNick + "!user@localhost NICK :" + newNick + "\r\n";
-    send(client_fd, nickMsg.c_str(), nickMsg.length(), 0);
+    std::string oldnick = this->getNickname();
+    std::string newNick = newname;//parsing job, get new nickname
+    std::string nickMsg = ":" + oldnick + "!user@localhost NICK :" + newNick + "\r\n";
+    send(this->_FD, nickMsg.c_str(), nickMsg.length(), 0);
 
 }
+
+User* findUserByFD(int fd)
+{
+    for (size_t i = 0; i < g_mappa.size(); ++i)
+    {
+        User* user = g_mappa[i];
+        if (user->getFD() == fd) {
+            return user;
+        }
+    }
+    return NULL;
+}
+
+User* findUserByNickname(const std::string& nick)
+{
+    for (size_t i = 0; i < g_mappa.size(); ++i)
+    {
+        User* user = g_mappa[i];
+        if (user->getNickname() == nick)
+            return user;
+    }
+    return NULL;
+}
+

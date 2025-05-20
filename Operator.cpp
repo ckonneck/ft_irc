@@ -80,3 +80,12 @@ void OP::Mode(char &modeChar)//could just do a map tbh.
         std::cout << "get some rights pleb." << std::endl;
 }
 
+int OP::getFD()
+{
+    return this->_FD;
+}
+
+std::string OP::getNickname()
+{
+    return this->_nickname;
+}

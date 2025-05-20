@@ -116,6 +116,12 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         //to pass full topic, should use the full vector minus the first word
         //which will be /TOPIC
     }
+    if (mBuf.find("/NICK") == 0 && mVec.size() > 1)
+    {
+        std::cout << "found /NICK on position 0" << std::endl;
+        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+        //let jan handle parsing
+    }
 
 }
 
