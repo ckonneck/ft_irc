@@ -1,39 +1,39 @@
 #include "Server.hpp"
 
-void User::Kick(std::string &target)
-{
-    if (this->_isOP != true)
-    {
-        std::cout<<  this->_nickname << " doesn't have the rights to kick "<< target << std::endl;
-    }
-    //if(searching through available nicknames returns a match)
-    //actually kick
-}
+// void User::Kick(std::string &target)
+// {
+//     if (this->_isOP != true)
+//     {
+//         std::cout<<  this->_nickname << " doesn't have the rights to kick "<< target << std::endl;
+//     }
+//     //if(searching through available nicknames returns a match)
+//     //actually kick
+// }
 
-void User::Invite(std::string &whotoinv)
-{
-    if (this->_isOP != true)
-    {
-        std::cout<< whotoinv << " doesn't exist" << std::endl;
-    }
-    //if(searching through available nicknames returns a match)
-    //actually invite
-}
+// void User::Invite(std::string &whotoinv)
+// {
+//     if (this->_isOP != true)
+//     {
+//         std::cout<< whotoinv << " doesn't exist" << std::endl;
+//     }
+//     //if(searching through available nicknames returns a match)
+//     //actually invite
+// }
 
-void User::Topic(std::string &topicstring, Chatroom &name)
-{
+// void User::Topic(std::string &topicstring, Chatroom &name)
+// {
 
-    if (this->_isOP != true)
-    {
-        std::cout<< "initiating topicchange" << std::endl;
-        name.setTopic(topicstring);
-    }
-    else
-    {
-        std::cout << "current Topic is: " << std::endl;
-        name.displayTopic();
-    }
-}
+//     if (this->_isOP != true)
+//     {
+//         std::cout<< "initiating topicchange" << std::endl;
+//         name.setTopic(topicstring);
+//     }
+//     else
+//     {
+//         std::cout << "current Topic is: " << std::endl;
+//         name.displayTopic();
+//     }
+// }
 
 void User::Mode(char &modeChar)//could just do a map tbh.
 {

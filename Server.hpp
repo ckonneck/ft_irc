@@ -11,7 +11,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <map>
-
+#include <ctime>
 
 class Chatroom;
 
@@ -23,9 +23,9 @@ class User
         static void newclient(int &server_fd, std::vector<pollfd> &fds);
         void HSwelcome(int &client_fd);
         void HSNick(const std::string &newname);
-        void Kick(std::string &target);
-        void Invite(std::string &whotoinv);
-        void Topic(std::string &topicstring, Chatroom &name);
+        void HSKick(const std::string &target);
+        void HSInvite(const std::string &whotoinv);
+        void HSTopicQuery(Chatroom &chatroom);
         void Mode(char &modeChar);
         int getFD();
         std::string getNickname();
@@ -42,14 +42,22 @@ class User
 class Chatroom
 {
     public:
-        void setTopic(std::string &topicstring);
+        void setTopic(const std::string &topicstring, const std::string &lastsetter);
         void displayTopic();
 		void broadcast();
+        std::string getName();
+        std::string getTopic();
+        std::string getLastTopicSetter();
+        bool hasTopic();
+        time_t getTopicTime();
     private:
+        time_t _topicTime;
+        bool _hasTopic;
         std::string _password;
         std::string _topic;
-        std::string channelname;
-        std::string channelmode;
+        std::string _channelname;
+        std::string _channelmode;
+        std::string _lastTopicSetter;
 		std::vector<User*> members_in_room;
 };
 extern std::vector<User*> g_mappa;

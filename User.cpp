@@ -84,3 +84,53 @@ User* findUserByNickname(const std::string& nick)
     return NULL;
 }
 
+void User::HSKick(const std::string &target)//templates for later parsing
+{   
+    if (this->_isOP != true)
+        return;
+    std::string reason = "guy is racist";
+    std::string channel = "yeanoidea";
+    std::string msg = ":" + this->_nickname + "!user@localhost KICK " 
+        + channel + " " + target + " :" + reason + "\r\n";
+    send(this->_FD, msg.c_str(), msg.length(), 0);
+}
+
+void User::HSInvite(const std::string &whotoinv)
+{
+    //check if user has invite rights i guess
+    //server sends response back to the client 
+    std::string channel = "yeanoidea";
+    std::string msg = ":localhost 341 " + this->_nickname + " " + whotoinv + " " + channel + "\r\n";
+    send(this->_FD, msg.c_str(), msg.length(), 0);
+
+    //server sends message to the person being invited
+    std::string msg2 = ":" + this->_nickname + "!user@localhost INVITE " + whotoinv + " :" + channel + "\r\n";
+    User *targetuser = findUserByNickname(whotoinv);
+    send(targetuser->_FD, msg2.c_str(), msg2.length(), 0);
+}
+
+void User::HSTopicQuery(Chatroom &chatroom)//this is for when client
+//sends: /Topic #channelname
+{
+    if (chatroom.hasTopic() == true) {
+        std::string topic = chatroom.getTopic();
+        std::string setter = chatroom.getLastTopicSetter();
+        std::ostringstream oss;
+        oss << chatroom.getTopicTime();
+        std::string timestamp = oss.str();
+
+        std::string msg332 = ":localhost 332 " + this->_nickname + " " + chatroom.getName() + " :" + topic + "\r\n";
+        send(this->_FD, msg332.c_str(), msg332.length(), 0);
+
+        std::string msg333 = ":localhost 333 " + this->_nickname + " " + chatroom.getName() + " " + setter + " " + timestamp + "\r\n";
+        send(this->_FD, msg333.c_str(), msg333.length(), 0);
+    } else {
+        std::string msg = ":localhost 331 " + this->_nickname + " " + chatroom.getName() + " :No topic is set\r\n";
+        send(this->_FD, msg.c_str(), msg.length(), 0);
+    }
+}
+
+// void User::HSSetTopic(const std::string &topicstring, Chatroom &chatroom)
+// {
+
+// }
