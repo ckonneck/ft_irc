@@ -1,43 +1,39 @@
 #include "Server.hpp"
+#include "Parsing.hpp"
+#include <poll.h>
+#include <unistd.h>
+#include <iostream>
+#include <cstring>
 
-void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
-{
+void serverloop(std::vector<pollfd>& fds, bool& running, int& server_fd) {
     for (size_t i = 0; i < fds.size(); ++i) {
-        if (fds[i].revents & POLLIN) {
-			 // Handle input from server terminal
-            if (fds[i].fd == STDIN_FILENO)
-            {
-                if(serverexit() == true)
-                {
-                    running = false;
-                    break;
-                }
-            }
-            // New connection
-            if (fds[i].fd == server_fd) {
-				
-                User::newclient(server_fd, fds);
-				std::cout << "found new client" << std::endl;
-                continue;
-            }
-            // Data from existing client
-            char buffer[1024];
-            ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
-            if (n <= 0) {
-                std::cout << "Client disconnected: FD " << fds[i].fd << std::endl;
-                close(fds[i].fd);
-                fds.erase(fds.begin() + i);
-                --i;
-                continue;
-            }
-            buffer[n] = '\0';
-            std::string msg(buffer);
-            std::cout << "Received from " << fds[i].fd << ": " << msg;
-            commandParsing(buffer, fds, i);
+        if (!(fds[i].revents & POLLIN)) continue;
+        if (fds[i].fd == STDIN_FILENO) {
+            if (serverexit()) { running = false; break; }
+            continue;
+        }
+        if (fds[i].fd == server_fd) {
+            User::newclient(server_fd, fds);
+            continue;
+        }
+        char   buffer[1024];
+        ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer)-1, 0);
+        if (n <= 0) {
+            close(fds[i].fd);
+            fds.erase(fds.begin() + i); --i;
+            continue;
+        }
+        buffer[n] = '\0';
+        std::string raw(buffer);
+        std::cout << "Received from " << fds[i].fd << ": " << raw;
+        User* u = User::findUserByFD(fds[i].fd);
+        if (u) {
+            processClientLine(*u, raw);
+        } else {
+            std::cerr << "No User for FD " << fds[i].fd << std::endl;
         }
     }
 }
-
 
 
 void welcomemessage()

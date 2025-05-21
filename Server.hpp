@@ -11,33 +11,12 @@
 #include <sstream>
 #include <unistd.h>
 #include <map>
+#include "User.hpp"
 #include <ctime>
 
 class Chatroom;
 
-class User
-{
-    public:
-        User(const std::string &nickname, const std::string &password);
-        ~User();
-        static void newclient(int &server_fd, std::vector<pollfd> &fds);
-        void HSwelcome(int &client_fd);
-        void HSNick(const std::string &newname);
-        void HSKick(const std::string &target);
-        void HSInvite(const std::string &whotoinv);
-        void HSTopicQuery(Chatroom &chatroom);
-        void Mode(char &modeChar);
-        int getFD();
-        std::string getNickname();
-    private:
-        bool _isOP;
-        std::string _nickname;
-        std::string _password;
-		std::string _hostname;
-		std::string _realname;
-		int _FD;
-		std::string _auth_state;
-};
+
 
 class Chatroom
 {
