@@ -1,5 +1,4 @@
 #include "Server.hpp"
-
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 {
     for (size_t i = 0; i < fds.size(); ++i) {
@@ -13,14 +12,12 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                     break;
                 }
             }
-            // New connection
             if (fds[i].fd == server_fd) {
-				
+                
                 User::newclient(server_fd, fds);
-				std::cout << "found new client" << std::endl;
+                std::cout << "found new client" << std::endl;
                 continue;
             }
-            // Data from existing client
             char buffer[1024];
             ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
             if (n <= 0) {
@@ -33,6 +30,9 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             buffer[n] = '\0';
             std::string msg(buffer);
             std::cout << "Received from " << fds[i].fd << ": " << msg;
+            // New connection
+            // Data from existing client
+            
             commandParsing(buffer, fds, i);
         }
     }
@@ -105,37 +105,37 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     std::string mBuf(messagebuffer);
     std::cout << "the command is " << mBuf << std::endl;
     std::vector<std::string> mVec = split(mBuf, ' ');
-    if (mBuf.find("/KICK") == 0 && mVec.size() > 1)
+    if (mBuf.find("KICK") == 0 && mVec.size() > 1)
     {
         std::cout << "found /KICK on position 0" << std::endl;
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
     }
-    if (mBuf.find("/JOIN") == 0 && mVec.size() > 1)
+    if (mBuf.find("JOIN") == 0 && mVec.size() > 1)
     {
         std::cout << "found /JOIN on position 0" << std::endl;
 
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        join_channel(fds[i].fd, NULL, NULL);
+        join_channel(fds[i].fd,"not yet", "parsed");
     }
-    if (mBuf.find("/INVITE") == 0 && mVec.size() > 1)
+    if (mBuf.find("INVITE") == 0 && mVec.size() > 1)
     {
         std::cout << "found /INVITE on position 0" << std::endl;
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
     }
-    if (mBuf.find("/TOPIC") == 0 && mVec.size() > 1)
+    if (mBuf.find("TOPIC") == 0 && mVec.size() > 1)
     {
         std::cout << "found /TOPIC on position 0" << std::endl;
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
         //to pass full topic, should use the full vector minus the first word
         //which will be /TOPIC
     }
-    if (mBuf.find("/NICK") == 0 && mVec.size() > 1)
+    if (mBuf.find("NICK") == 0 && mVec.size() > 1)
     {
         std::cout << "found /NICK on position 0" << std::endl;
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
         //let jan handle parsing
     }
-
+    
 }
 
 

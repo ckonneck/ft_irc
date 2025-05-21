@@ -5,7 +5,7 @@ void validatePort(char *argv)
     if(isDigit(argv) == true)
     {
         int len = strlen(argv);
-        if(len >= 1 || len <= 5)
+        if(len >= 1 && len <= 5)
         {
             std::cout << "you chose port " << argv << std::endl;
         }
@@ -35,5 +35,9 @@ bool isDigit(char *strnum)
 	}
 	return true;
 }
-
-
+std::string intToString(int value)
+{
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}

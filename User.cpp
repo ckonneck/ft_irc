@@ -12,41 +12,48 @@ User::~User()
 {
     std::cout << "User "<< this->_nickname <<" fucked off to somewhere else" <<std::endl;
 }
-
-void User::newclient(int &server_fd, std::vector<pollfd> &fds)
+void User::newclient(int server_fd, std::vector<pollfd> &fds)
 {
-    struct sockaddr_in client_addr;
-    socklen_t addrlen = sizeof(client_addr);
-    int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addrlen);
-    if (client_fd < 0) {
-        std::cerr << "[newclient] accept error: " << strerror(errno) << std::endl;
-        return;
+    int client_fd = accept(server_fd, NULL, NULL);
+    if (client_fd >= 0)
+    {
+        fcntl(client_fd, F_SETFL, O_NONBLOCK);
+        pollfd client_pollfd = { client_fd, POLLIN, 0 };
+        fds.push_back(client_pollfd);
+        std::cout << "New client connected: FD nr " << client_fd << "\n";
+
+        // Create a temporary user with default nickname
+        // We'll update the nickname when we receive a NICK command
+        User* newUser = new User("guest" + intToString(client_fd), "");
+        newUser->_FD = client_fd;
+        g_mappa.push_back(newUser);
+        
+        newUser->HSwelcome(client_fd);
     }
-    // Set non-blocking
-    int flags = fcntl(client_fd, F_GETFL, 0);
-    fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
-
-    pollfd pfd;
-    pfd.fd = client_fd;
-    pfd.events = POLLIN;
-    fds.push_back(pfd);
-
-	char buffer[1024];
-            ssize_t n = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-			(void)n;
-            // if (n <= 0) {
-            //     std::cout << "Client disconnected: FD " << client_fd << std::endl;
-            //     close(client_fd);
-            //     fds.erase(fds.begin());
-            // }
-			std::cout << "to parse" << std ::endl << buffer << std::endl;
-	//User *newUser =  new User("non", "init");
-
-    std::cout << "New client connected: FD " << client_fd << std::endl;
 }
+std::string parseNick(const std::string &msg)
+{
+    size_t pos = msg.find("NICK");
+    if (pos == std::string::npos)
+        return ""; // NICK not found
+
+    // Move past "NICK" and any space
+    pos += 4;
+
+    // Skip any whitespace after "NICK"
+    while (pos < msg.length() && std::isspace(msg[pos]))
+        ++pos;
+
+    // Extract until end of line or space
+    size_t end = msg.find_first_of("\r\n ", pos);
+    std::string nickname = msg.substr(pos, end - pos);
+
+    return nickname;
+}
+
 void User::HSwelcome(int &client_fd)
 {
-    std::string nick = "needparsing"; // from client //get ALL THE NECESSARY DETAILS FROM THIS PARSING
+    std::string nick = this->_nickname; // from client //get ALL THE NECESSARY DETAILS FROM THIS PARSING
             //including stuff like password and whatnot, then actually create the User();
     std::string msg1 = ":localhost 001 " + nick + " :Welcome to UWURC server " + nick + "\r\n";
     send(client_fd, msg1.c_str(), msg1.length(), 0);
@@ -67,8 +74,8 @@ void User::HSNick(const std::string &newname)//not yet called anywhere
     std::string newNick = newname;//parsing job, get new nickname
     std::string nickMsg = ":" + oldnick + "!user@localhost NICK :" + newNick + "\r\n";
     send(this->_FD, nickMsg.c_str(), nickMsg.length(), 0);
-
 }
+
 User* findUserByFD(int fd)
 {
     std::cout << "Starting search for user with FD: " << fd << std::endl;
@@ -116,7 +123,7 @@ void User::HSInvite(const std::string &whotoinv)
 {
     //check if user has invite rights i guess
     //server sends response back to the client 
-    std::string channel = "yeanoidea";
+    std::string channel = "yeanoidea";//parsing plss
     std::string msg = ":localhost 341 " + this->_nickname + " " + whotoinv + " " + channel + "\r\n";
     send(this->_FD, msg.c_str(), msg.length(), 0);
 
@@ -147,7 +154,10 @@ void User::HSTopicQuery(Chatroom &chatroom)//this is for when client
     }
 }
 
-// void User::HSSetTopic(const std::string &topicstring, Chatroom &chatroom)
-// {
-
-// }
+void User::HSSetTopic(const std::string &topicstring, Chatroom &chatroom)
+{
+    //if user has rights
+    chatroom.setTopic(topicstring, chatroom.getLastTopicSetter());
+    std::string topicChangeMsg = ":" + this->_nickname + "!user@localhost TOPIC " + chatroom.getName() + " :" + topicstring + "\r\n";
+    chatroom.broadcast(topicChangeMsg);
+}

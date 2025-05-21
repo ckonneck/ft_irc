@@ -20,12 +20,13 @@ class User
     public:
         User(const std::string &nickname, const std::string &password);
         ~User();
-        static void newclient(int &server_fd, std::vector<pollfd> &fds);
+        static void newclient(int client_fd,std::vector<pollfd> &fds);
         void HSwelcome(int &client_fd);
         void HSNick(const std::string &newname);
         void HSKick(const std::string &target);
         void HSInvite(const std::string &whotoinv);
         void HSTopicQuery(Chatroom &chatroom);
+        void HSSetTopic(const std::string &topicstring, Chatroom &chatroom);
         void Mode(char &modeChar);
         int getFD();
         std::string getNickname();
@@ -42,9 +43,10 @@ class User
 class Chatroom
 {
     public:
+        Chatroom(const std::string &name);
         void setTopic(const std::string &topicstring, const std::string &lastsetter);
         void displayTopic();
-		void broadcast();
+		void broadcast(const std::string &msg);
         std::string getName();
         std::string getTopic();
         std::string getLastTopicSetter();
@@ -72,3 +74,5 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i);
 std::vector<std::string> split(const std::string &input, char delimiter);
 User* findUserByFD(int fd);
 User* findUserByNickname(const std::string& nick);
+std::string parseNick(const std::string &msg);
+std::string intToString(int value);
