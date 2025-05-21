@@ -30,6 +30,7 @@ class User
         void Mode(char &modeChar);
         int getFD();
         std::string getNickname();
+        void setNickname(const std::string &nick);
     private:
         bool _isOP;
         std::string _nickname;

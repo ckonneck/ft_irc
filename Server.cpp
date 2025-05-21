@@ -81,6 +81,7 @@ void join_channel(int client_fd, const std::string& nickname, const std::string&
 
 void messagehandling(std::vector<pollfd> &fds, size_t i)
 {
+    User *curr = findUserByFD(fds[i].fd);
     char messagebuffer[2024];
     int n = recv(fds[i].fd, messagebuffer, sizeof(messagebuffer) - 1, 0);
     if (n <= 0)
@@ -90,8 +91,13 @@ void messagehandling(std::vector<pollfd> &fds, size_t i)
         fds.erase(fds.begin() + i);
         --i;
     }
+    else if(curr->getNickname() == "")//meh
+    {
+        std::cout << "NEW USER ALARM" << std::endl;
+    }
     else
     {
+
         commandParsing(messagebuffer, fds, i);
 
         //insert command parsing
@@ -104,7 +110,16 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
 {
     std::string mBuf(messagebuffer);
     std::cout << "the command is " << mBuf << std::endl;
+    User *curr = findUserByFD(fds[i].fd);
     std::vector<std::string> mVec = split(mBuf, ' ');
+    if (mBuf.find("NICK") == 0 && mVec.size() > 1)
+    {
+        std::cout << "found /NICK on position 0" << std::endl;
+        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+        std::string newnick = parseNick(mBuf);
+        curr->setNickname(newnick);
+        curr->HSNick(newnick);
+    }
     if (mBuf.find("KICK") == 0 && mVec.size() > 1)
     {
         std::cout << "found /KICK on position 0" << std::endl;
@@ -129,12 +144,12 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         //to pass full topic, should use the full vector minus the first word
         //which will be /TOPIC
     }
-    if (mBuf.find("NICK") == 0 && mVec.size() > 1)
-    {
-        std::cout << "found /NICK on position 0" << std::endl;
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        //let jan handle parsing
-    }
+    // if (mBuf.find("NICK") == 0 && mVec.size() > 1)
+    // {
+    //     std::cout << "found /NICK on position 0" << std::endl;
+    //     std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+    //     //let jan handle parsing
+    // }
     
 }
 

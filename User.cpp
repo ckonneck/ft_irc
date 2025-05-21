@@ -24,10 +24,10 @@ void User::newclient(int server_fd, std::vector<pollfd> &fds)
 
         // Create a temporary user with default nickname
         // We'll update the nickname when we receive a NICK command
-        User* newUser = new User("guest" + intToString(client_fd), "");
+        User* newUser = new User("","");
         newUser->_FD = client_fd;
         g_mappa.push_back(newUser);
-        
+        std::cout << "we done" <<std::endl;
         newUser->HSwelcome(client_fd);
     }
 }
@@ -160,4 +160,9 @@ void User::HSSetTopic(const std::string &topicstring, Chatroom &chatroom)
     chatroom.setTopic(topicstring, chatroom.getLastTopicSetter());
     std::string topicChangeMsg = ":" + this->_nickname + "!user@localhost TOPIC " + chatroom.getName() + " :" + topicstring + "\r\n";
     chatroom.broadcast(topicChangeMsg);
+}
+
+void User::setNickname(const std::string &nick)
+{
+    this->_nickname = nick;
 }
