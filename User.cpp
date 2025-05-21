@@ -15,7 +15,13 @@ User::~User()
 void User::newclient(int server_fd, std::vector<pollfd> &fds)
 {
     int client_fd = accept(server_fd, NULL, NULL);
-    if (client_fd >= 0)
+    if (client_fd < 0)
+    {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            std::cout << "strangerdanger" << std::endl;
+        }
+    }
+    else
     {
         fcntl(client_fd, F_SETFL, O_NONBLOCK);
         pollfd client_pollfd = { client_fd, POLLIN, 0 };
@@ -30,6 +36,8 @@ void User::newclient(int server_fd, std::vector<pollfd> &fds)
         std::cout << "we done" <<std::endl;
         newUser->HSwelcome(client_fd);
     }
+    
+
 }
 std::string parseNick(const std::string &msg)
 {

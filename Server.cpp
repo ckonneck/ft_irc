@@ -1,7 +1,7 @@
 #include "Server.hpp"
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 {
-    for (size_t i = 0; i < fds.size(); ++i) {
+    for (size_t i = 0; i < fds.size(); i++) {
         if (fds[i].revents & POLLIN) {
 			 // Handle input from server terminal
             if (fds[i].fd == STDIN_FILENO)
@@ -24,6 +24,9 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                 std::cout << "Client disconnected: FD " << fds[i].fd << std::endl;
                 close(fds[i].fd);
                 fds.erase(fds.begin() + i);
+                User *old = findUserByFD(server_fd);
+                std::cout << "deleting old" << std::endl;
+                removeUser(old);
                 --i;
                 continue;
             }
@@ -38,7 +41,19 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
     }
 }
 
+void removeUser(User* target) {
+    // Step 1: move all non-target pointers to the front, get new logical end
+    std::vector<User*>::iterator newEnd =
+        std::remove(g_mappa.begin(), g_mappa.end(), target);
 
+    // Step 2: delete the removed User* objects
+    for (std::vector<User*>::iterator it = newEnd; it != g_mappa.end(); ++it) {
+        delete *it;
+    }
+
+    // Step 3: actually erase them from the vector
+    g_mappa.erase(newEnd, g_mappa.end());
+}
 
 void welcomemessage()
 {
@@ -81,7 +96,6 @@ void join_channel(int client_fd, const std::string& nickname, const std::string&
 
 void messagehandling(std::vector<pollfd> &fds, size_t i)
 {
-    User *curr = findUserByFD(fds[i].fd);
     char messagebuffer[2024];
     int n = recv(fds[i].fd, messagebuffer, sizeof(messagebuffer) - 1, 0);
     if (n <= 0)
@@ -90,10 +104,6 @@ void messagehandling(std::vector<pollfd> &fds, size_t i)
         close(fds[i].fd);
         fds.erase(fds.begin() + i);
         --i;
-    }
-    else if(curr->getNickname() == "")//meh
-    {
-        std::cout << "NEW USER ALARM" << std::endl;
     }
     else
     {
@@ -111,7 +121,13 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     std::string mBuf(messagebuffer);
     std::cout << "the command is " << mBuf << std::endl;
     User *curr = findUserByFD(fds[i].fd);
+    std::cout << "this is tha nicknamuin commando: "<< curr->getNickname() << std::endl;
     std::vector<std::string> mVec = split(mBuf, ' ');
+    if (mBuf.find("PING") == 0)
+    {
+        std::string response = "PONG :localhost\r\n";
+        send(fds[i].fd, response.c_str(), response.length(), 0);
+    }
     if (mBuf.find("NICK") == 0 && mVec.size() > 1)
     {
         std::cout << "found /NICK on position 0" << std::endl;
@@ -119,6 +135,8 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         std::string newnick = parseNick(mBuf);
         curr->setNickname(newnick);
         curr->HSNick(newnick);
+        std::cout << "this is tha nicknamuin commando2222: "<< curr->getNickname() << std::endl;
+
     }
     if (mBuf.find("KICK") == 0 && mVec.size() > 1)
     {

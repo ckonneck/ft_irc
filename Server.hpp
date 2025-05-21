@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <map>
 #include <ctime>
+#include <algorithm>
 
 class Chatroom;
 
@@ -77,3 +78,4 @@ User* findUserByFD(int fd);
 User* findUserByNickname(const std::string& nick);
 std::string parseNick(const std::string &msg);
 std::string intToString(int value);
+void removeUser(User* target);
