@@ -9,13 +9,14 @@
 #include <string>
 #include <map>
 #include <poll.h>
+#include <algorithm>
+#include "User.hpp"
+#include "Chatroom.hpp"
 
 
-// these live somewhere in your .cpp/.h pair:
 extern std::map<std::string,Chatroom*> g_chatrooms;
 extern std::string servername;
 
-// Dispatcher
 void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
 {
     std::string raw(messagebuffer);
@@ -55,7 +56,6 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
                                  handleQuit(fd);
 }
 
-// Handlers
 
 void handlePing(int fd)
 {
@@ -76,11 +76,8 @@ void handleNick(User* curr,
     curr->HSNick(oldnick, newnick);
 }
 
-// In your command‐dispatcher, parse: KICK <channel> <user> [:<reason>]
-// then call something like:
-#include <algorithm>
-#include "User.hpp"
-#include "Chatroom.hpp"
+
+
 
 
 void handleKick(User* requester,
@@ -176,6 +173,8 @@ void handleJoin(User* curr, int fd, const std::string& chanArg)
     {
         chan = new Chatroom(chanName);
         g_chatrooms[chanName] = chan;
+        chan->addOperator(curr);
+        std::cout << "User: " << curr->getNickname() << " is Operator of " << chan->getName() << std::endl; 
     }
     else
     {

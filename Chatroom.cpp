@@ -25,6 +25,35 @@ bool Chatroom::isMember(User* u) const
            != members_in_room.end();
 }
 
+void Chatroom::addOperator(User* u)
+{
+    // avoid duplicates
+    if (!isOperator(u)) {
+        operators_of_room.push_back(u);
+        // (optional) log it:
+        std::cout << "User " << u->getNickname()
+                  << " is now operator in " << _channelname
+                  << std::endl;
+    }
+}
+
+void Chatroom::removeOperator(User* u)
+{
+    // find returns an iterator to the element or end()
+    std::vector<User*>::iterator it =
+        std::find(operators_of_room.begin(),
+                  operators_of_room.end(),
+                  u);
+
+    if (it != operators_of_room.end()) {
+        operators_of_room.erase(it);
+        // (optional) log it:
+        std::cout << "User " << u->getNickname()
+                  << " removed as operator from "
+                  << _channelname << std::endl;
+    }
+}
+
 bool Chatroom::isOperator(User* u) const
 {
     return std::find(operators_of_room.begin(),
@@ -32,6 +61,7 @@ bool Chatroom::isOperator(User* u) const
                      u)
            != operators_of_room.end();
 }
+
 
 User* Chatroom::findUserByNick(const std::string& nick)
 {

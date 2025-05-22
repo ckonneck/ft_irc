@@ -20,6 +20,8 @@ class Chatroom
 		  bool isMember(User* u) const;
     bool isOperator(User* u) const;
     User* findUserByNick(const std::string& nick);
+    void addOperator(User* u);
+    void removeOperator(User* u);
 
     private:
         time_t _topicTime;
