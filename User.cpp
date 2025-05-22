@@ -30,7 +30,7 @@ void User::newclient(int server_fd, std::vector<pollfd> &fds)
 
         // Create a temporary user with default nickname
         // We'll update the nickname when we receive a NICK command
-        User* newUser = new User("","");
+        User* newUser = new User("CHANGE NICK");
         newUser->_FD = client_fd;
         g_mappa.push_back(newUser);
         std::cout << "we done" <<std::endl;

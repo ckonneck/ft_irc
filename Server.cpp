@@ -118,6 +118,14 @@ void messagehandling(std::vector<pollfd> &fds, size_t i)
 
 void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
 {
+
+	    // If the listening socket has activity, accept a new client connection
+    if (fds[i].fd == server_fd && (fds[i].revents & POLLIN)) {
+        // Use the User::newclient function to accept and initialize the new user
+        User::newclient(server_fd, fds);
+        return; // no further parsing for server socket
+    }
+
     std::string mBuf(messagebuffer);
     std::cout << "the command is " << mBuf << std::endl;
     User *curr = findUserByFD(fds[i].fd);
