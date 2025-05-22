@@ -41,3 +41,9 @@ std::string intToString(int value)
     oss << value;
     return oss.str();
 }
+
+// Utility function to trim trailing \r and \n
+std::string sanitize(const std::string& str) {
+    size_t end = str.find_last_not_of("\r\n");
+    return (end == std::string::npos) ? "" : str.substr(0, end + 1);
+}

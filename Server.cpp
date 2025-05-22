@@ -33,12 +33,33 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             buffer[n] = '\0';
             std::string msg(buffer);
             std::cout << "Received from " << fds[i].fd << ": " << msg;
-            // New connection
+            User *user = findUserByFD(fds[i].fd);
+            if (user->isRegis()== false)
+            {
+                std::string nick = parseNick(msg);
+                std::string host = parseHost(msg);
+                std::string user_str = parseUser(msg);
+                user->setNickname(nick);
+                user->setHostname(host);
+                user->setUser(user_str);
+                user->HSwelcome(fds[i].fd);
+                user->setRegis(true);
+            }
             // Data from existing client
             
             commandParsing(buffer, fds, i);
         }
     }
+}
+
+bool User::isRegis()
+{
+    return (this->_isRegis);
+}
+
+void User::setRegis(bool status)
+{
+    this->_isRegis = status;
 }
 
 void removeUser(User* target) {
@@ -107,7 +128,6 @@ void messagehandling(std::vector<pollfd> &fds, size_t i)
     }
     else
     {
-
         commandParsing(messagebuffer, fds, i);
 
         //insert command parsing
@@ -132,11 +152,11 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     {
         std::cout << "found /NICK on position 0" << std::endl;
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+        std::string oldnick = curr->getNickname();
         std::string newnick = parseNick(mBuf);
         curr->setNickname(newnick);
-        curr->HSNick(newnick);
+        curr->HSNick(oldnick, newnick);
         std::cout << "this is tha nicknamuin commando2222: "<< curr->getNickname() << std::endl;
-
     }
     if (mBuf.find("KICK") == 0 && mVec.size() > 1)
     {
@@ -148,7 +168,7 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         std::cout << "found /JOIN on position 0" << std::endl;
         
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        std::string chanName = mVec[1];
+        std::string chanName = sanitize(mVec[1]);
         if (chanName[0] != '#')
         {
             std::cout <<"  Invalid channel name " << std::endl;
@@ -158,10 +178,16 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         if(g_chatrooms.find(chanName) == g_chatrooms.end())
         {
             chan = new Chatroom(chanName);
+            // std::cout << "debug lalala"<< chanName << std::endl;
+            //         for (size_t j = 0; j < chanName.size(); ++j) {
+            //             std::cout << "target[" << j << "] = '" << chanName[j] << "' (0x" 
+            //             << std::hex << (int)(unsigned char)chanName[j] << ")" << std::endl;
+            // }
             g_chatrooms[chanName] = chan;
         }
         else
         {
+            std::cout << "debug lalala222: " << chanName << std::endl;
             chan = g_chatrooms[chanName];
         }
 
@@ -172,21 +198,40 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     }
     if (mBuf.find("PRIVMSG") == 0)
     {
+        std::cout << "WE IN HERE" << std::endl;
         if (mVec.size() < 3) return;
         std::string target = mVec[1];
+
+         std::cout << "WE IN HERE2" << std::endl;
         size_t msg_start = mBuf.find(" :", 0);
         std::string actual_message = (msg_start != std::string::npos)
         ? mBuf.substr(msg_start + 2) : "";
+        std::cout << "target is: " << target << std::endl;
+        std::cout << "target 0 is: " << target[0] << std::endl;
+        for (size_t j = 0; j < target.size(); ++j) {
+    std::cout << "target[" << j << "] = '" << target[j] << "' (0x" 
+              << std::hex << (int)(unsigned char)target[j] << ")" << std::endl;
+}
+
         if (target[0] == '#')
         {
-            // Channel message
-            if (g_chatrooms.find(target) == g_chatrooms.end()) {
-                send_to_client(fds[i].fd, "403 " + target + " :No such channel\r\n");
-                return;
+            std::cout << "WE IN HERE2.5" << std::endl;
+            for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin(); it != g_chatrooms.end(); ++it)
+            {
+                std::cout << "Channel nameIT: " << it->first << std::endl;
             }
-        Chatroom* chan = g_chatrooms[target];
-        std::string fullMsg = ":" + curr->getNickname() + " PRIVMSG " + target + " :" + actual_message + "\r\n";
-        chan->broadcast(fullMsg, curr);
+
+            // if (g_chatrooms.find(target) == g_chatrooms.end())
+            // {
+            //     std::cout << "WE IN HERE2.7" << std::endl;
+
+            //     send_to_client(fds[i].fd, "403 " + target + " :No such channel\r\n");
+            //     return;
+            // }
+            std::cout << "WE IN HERE3" << std::endl;
+            Chatroom* chan = g_chatrooms[target];
+            std::string fullMsg = ":" + curr->getNickname() + " PRIVMSG " + target + " :" + actual_message + "\r\n";
+            chan->broadcast(fullMsg, curr);
     } else {
         // Private message to a user
     }
@@ -203,12 +248,11 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         //to pass full topic, should use the full vector minus the first word
         //which will be /TOPIC
     }
-    // if (mBuf.find("NICK") == 0 && mVec.size() > 1)
-    // {
-    //     std::cout << "found /NICK on position 0" << std::endl;
-    //     std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-    //     //let jan handle parsing
-    // }
+    if (mBuf.find("QUIT") == 0 && mVec.size() >= 1)
+    {
+        removeUser(findUserByFD(fds[i].fd));
+        std::cout << "got rid of " <<  fds[i].fd << std::endl;
+    }
     
 }
 

@@ -6,6 +6,7 @@ std::map<std::string, Chatroom*> g_chatrooms;
 
 User::User(const std::string &nickname,const std::string &password) : _nickname(nickname), _password(password)
 {
+
     this->_isOP = false;
     std::cout << "User "<< this->_nickname <<" has been created" <<std::endl;
 }
@@ -34,9 +35,11 @@ void User::newclient(int server_fd, std::vector<pollfd> &fds)
         // We'll update the nickname when we receive a NICK command
         User* newUser = new User("","");
         newUser->_FD = client_fd;
+        newUser->setRegis(false);
         g_mappa.push_back(newUser);
         std::cout << "we done" <<std::endl;
-        newUser->HSwelcome(client_fd);
+
+        // newUser->HSwelcome(client_fd);
     }
     
 
@@ -61,11 +64,59 @@ std::string parseNick(const std::string &msg)
     return nickname;
 }
 
+std::string parseUser(const std::string &msg)
+{
+    size_t pos = msg.find("USER");
+    if (pos == std::string::npos)
+        return ""; // USER not found
+
+    pos += 4;
+    while (pos < msg.length() && std::isspace(msg[pos]))
+        ++pos;
+
+    // Extract the first word after USER (the username)
+    size_t end = msg.find_first_of("\r\n ", pos);
+    return msg.substr(pos, end - pos);
+}
+
+std::string parseHost(const std::string &msg)
+{
+    size_t pos = msg.find("USER");
+    if (pos == std::string::npos)
+        return ""; // USER not found
+
+    pos += 4;
+    while (pos < msg.length() && std::isspace(msg[pos]))
+        ++pos;
+
+    // Skip username (first word)
+    pos = msg.find_first_of(" \r\n", pos);
+    if (pos == std::string::npos)
+        return "";
+
+    while (pos < msg.length() && std::isspace(msg[pos]))
+        ++pos;
+
+    // Skip mode/unused (second word)
+    pos = msg.find_first_of(" \r\n", pos);
+    if (pos == std::string::npos)
+        return "";
+
+    while (pos < msg.length() && std::isspace(msg[pos]))
+        ++pos;
+
+    // Now we're at the host (third word)
+    size_t end = msg.find_first_of("\r\n ", pos);
+    return msg.substr(pos, end - pos);
+}
+
+
 void User::HSwelcome(int &client_fd)
 {
-    std::string nick = this->_nickname; // from client //get ALL THE NECESSARY DETAILS FROM THIS PARSING
-            //including stuff like password and whatnot, then actually create the User();
-    std::string msg1 = ":localhost 001 " + nick + " :Welcome to UWURC server " + nick + "\r\n";
+    std::string nick = this->_nickname; // from client
+    std::string host = this->_hostname;
+    std::string username = this->_username;
+    std::string msg1 = ":localhost 001 " + nick + " :Welcome to the UWURC server " + nick + "!" + username + "@" + host + "\r\n";
     send(client_fd, msg1.c_str(), msg1.length(), 0);
 
     std::string msg2 = ":localhost 002 " + nick + " :Your host is UWUCHAN running version 1.0\r\n";
@@ -78,11 +129,16 @@ void User::HSwelcome(int &client_fd)
     send(client_fd, msg4.c_str(), msg4.length(), 0);
 }
 
-void User::HSNick(const std::string &newname)//not yet called anywhere
+void User::HSNick(const std::string &oldname, const std::string &newname)
 {
-    std::string oldnick = this->getNickname();
-    std::string newNick = newname;//parsing job, get new nickname
+    std::string oldnick = oldname;
+    std::string newNick = newname;
     std::string nickMsg = ":" + oldnick + "!user@localhost NICK :" + newNick + "\r\n";
+    for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin();
+        it != g_chatrooms.end(); ++it)
+    {
+        it->second->broadcast(nickMsg, this);
+    }
     send(this->_FD, nickMsg.c_str(), nickMsg.length(), 0);
 }
 
@@ -175,4 +231,12 @@ void User::HSSetTopic(const std::string &topicstring, Chatroom &chatroom)
 void User::setNickname(const std::string &nick)
 {
     this->_nickname = nick;
+}
+ void User::setHostname(const std::string &host)
+ {
+    this->_hostname = host;
+ }
+void User::setUser(const std::string &user_str)
+{
+    this->_username = user_str;
 }

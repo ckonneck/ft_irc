@@ -3,7 +3,16 @@
 
 
 Chatroom::Chatroom(const std::string &name)
+    : _topicTime(0),
+      _hasTopic(false),
+      _password(""),
+      _topic(""),
+      _channelname(name),
+      _channelmode(""),
+      _lastTopicSetter(""),
+      members_in_room()
 {
+    this->_channelname = name;
     std::cout << "Chatroom " << name << " has been created.";
 
 }
@@ -63,11 +72,12 @@ void Chatroom::setTopic(const std::string &topicstring, const std::string &lasts
 
 void Chatroom::broadcast(const std::string &msg, User *sender)
 {
-    // (void) sender;
-    for (size_t i = 0; i < g_mappa.size(); ++i)
     {
-        if (g_mappa[i] != sender)
-            send_to_client(g_mappa[i]->getFD(), msg);
+        for (size_t i = 0; i < members_in_room.size(); ++i) {
+            if (members_in_room[i] != sender) {
+                send_to_client(members_in_room[i]->getFD(), msg);
+            }
+        }
+        std::cout << "Broadcast to " << this->_channelname << ": " << msg;
     }
-    std::cout << "this needs to go to everyone\n" << msg << std::endl;
 }
