@@ -36,14 +36,20 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             User *user = findUserByFD(fds[i].fd);
             if (user->isRegis()== false)
             {
+                std::cout << "WE NEW USER UP IN HERE" << std::endl;
                 std::string nick = parseNick(msg);
                 std::string host = parseHost(msg);
                 std::string user_str = parseUser(msg);
                 user->setNickname(nick);
                 user->setHostname(host);
                 user->setUser(user_str);
-                user->HSwelcome(fds[i].fd);
-                user->setRegis(true);
+                if(user->getNickname() != "" && user->getHostname() != "" && user->getUsername() != "")
+                {
+                    user->setRegis(true);
+                    std::cout << "USER " << nick << " HAS BEEN ABSOLUTELY VERIFIED FOR SURE" << std::endl;
+                    user->HSwelcome(fds[i].fd);
+                }
+                continue;
             }
             // Data from existing client
             

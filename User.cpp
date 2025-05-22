@@ -4,7 +4,7 @@
 std::vector<User*> g_mappa;
 std::map<std::string, Chatroom*> g_chatrooms;
 
-User::User(const std::string &nickname,const std::string &password) : _nickname(nickname), _password(password)
+User::User(const std::string &nickname,const std::string &password) : _username(""), _nickname(nickname), _password(password), _hostname("")
 {
 
     this->_isOP = false;
@@ -239,4 +239,14 @@ void User::setNickname(const std::string &nick)
 void User::setUser(const std::string &user_str)
 {
     this->_username = user_str;
+}
+
+std::string User::getHostname()
+{
+    return this->_hostname;
+}
+
+std::string User::getUsername()
+{
+    return this->_username;
 }

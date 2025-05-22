@@ -18,6 +18,8 @@ class User
         void Mode(char &modeChar);
         int getFD();
         std::string getNickname();
+		std::string getHostname();
+		std::string getUsername();
         void setNickname(const std::string &nick);
         void setHostname(const std::string &host);
         void setUser(const std::string &user_str);
