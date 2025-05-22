@@ -118,14 +118,6 @@ void messagehandling(std::vector<pollfd> &fds, size_t i)
 
 void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
 {
-
-	    // If the listening socket has activity, accept a new client connection
-    if (fds[i].fd == server_fd && (fds[i].revents & POLLIN)) {
-        // Use the User::newclient function to accept and initialize the new user
-        User::newclient(server_fd, fds);
-        return; // no further parsing for server socket
-    }
-
     std::string mBuf(messagebuffer);
     std::cout << "the command is " << mBuf << std::endl;
     User *curr = findUserByFD(fds[i].fd);
@@ -154,9 +146,50 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     if (mBuf.find("JOIN") == 0 && mVec.size() > 1)
     {
         std::cout << "found /JOIN on position 0" << std::endl;
-
+        
         std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        join_channel(fds[i].fd,"not yet", "parsed");
+        std::string chanName = mVec[1];
+        if (chanName[0] != '#')
+        {
+            std::cout <<"  Invalid channel name " << std::endl;
+            return;
+        }
+        Chatroom* chan = NULL;
+        if(g_chatrooms.find(chanName) == g_chatrooms.end())
+        {
+            chan = new Chatroom(chanName);
+            g_chatrooms[chanName] = chan;
+        }
+        else
+        {
+            chan = g_chatrooms[chanName];
+        }
+
+        chan->addUser(curr);
+        std::string msg = ":" + curr->getNickname() + " JOIN :" + chanName + "\r\n";
+        chan->broadcast(msg, NULL); // NULL = broadcast to all
+        join_channel(fds[i].fd, curr->getNickname(), chan->getName());
+    }
+    if (mBuf.find("PRIVMSG") == 0)
+    {
+        if (mVec.size() < 3) return;
+        std::string target = mVec[1];
+        size_t msg_start = mBuf.find(" :", 0);
+        std::string actual_message = (msg_start != std::string::npos)
+        ? mBuf.substr(msg_start + 2) : "";
+        if (target[0] == '#')
+        {
+            // Channel message
+            if (g_chatrooms.find(target) == g_chatrooms.end()) {
+                send_to_client(fds[i].fd, "403 " + target + " :No such channel\r\n");
+                return;
+            }
+        Chatroom* chan = g_chatrooms[target];
+        std::string fullMsg = ":" + curr->getNickname() + " PRIVMSG " + target + " :" + actual_message + "\r\n";
+        chan->broadcast(fullMsg, curr);
+    } else {
+        // Private message to a user
+    }
     }
     if (mBuf.find("INVITE") == 0 && mVec.size() > 1)
     {

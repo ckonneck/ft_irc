@@ -48,12 +48,15 @@ class Chatroom
         Chatroom(const std::string &name);
         void setTopic(const std::string &topicstring, const std::string &lastsetter);
         void displayTopic();
-		void broadcast(const std::string &msg);
+		void broadcast(const std::string &msg, User *sender);
         std::string getName();
         std::string getTopic();
         std::string getLastTopicSetter();
         bool hasTopic();
         time_t getTopicTime();
+        void addUser(User *user);
+        void removeUser(User* user);
+
     private:
         time_t _topicTime;
         bool _hasTopic;
@@ -64,6 +67,7 @@ class Chatroom
         std::string _lastTopicSetter;
 		std::vector<User*> members_in_room;
 };
+extern std::map<std::string, Chatroom*> g_chatrooms;
 extern std::vector<User*> g_mappa;
 bool serverexit();
 void cleanup(std::vector<pollfd> &fds);
@@ -79,3 +83,4 @@ User* findUserByNickname(const std::string& nick);
 std::string parseNick(const std::string &msg);
 std::string intToString(int value);
 void removeUser(User* target);
+void send_to_client(int client_fd, const std::string& message);

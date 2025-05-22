@@ -2,6 +2,8 @@
 #include <cerrno>
 
 std::vector<User*> g_mappa;
+std::map<std::string, Chatroom*> g_chatrooms;
+
 User::User(const std::string &nickname,const std::string &password) : _nickname(nickname), _password(password)
 {
     this->_isOP = false;
@@ -30,7 +32,7 @@ void User::newclient(int server_fd, std::vector<pollfd> &fds)
 
         // Create a temporary user with default nickname
         // We'll update the nickname when we receive a NICK command
-        User* newUser = new User("CHANGE NICK");
+        User* newUser = new User("","");
         newUser->_FD = client_fd;
         g_mappa.push_back(newUser);
         std::cout << "we done" <<std::endl;
@@ -167,7 +169,7 @@ void User::HSSetTopic(const std::string &topicstring, Chatroom &chatroom)
     //if user has rights
     chatroom.setTopic(topicstring, chatroom.getLastTopicSetter());
     std::string topicChangeMsg = ":" + this->_nickname + "!user@localhost TOPIC " + chatroom.getName() + " :" + topicstring + "\r\n";
-    chatroom.broadcast(topicChangeMsg);
+    chatroom.broadcast(topicChangeMsg, this);
 }
 
 void User::setNickname(const std::string &nick)
