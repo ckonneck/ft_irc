@@ -39,3 +39,4 @@ std::string sanitize(const std::string& str);
 std::string parseNick(const std::string &msg);
 std::string parseUser(const std::string &msg);
 std::string parseHost(const std::string &msg);
+void join_channel(int client_fd, const std::string& nickname, const std::string& channel);
