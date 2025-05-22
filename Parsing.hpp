@@ -33,4 +33,16 @@ void handleCommand(const ParsedCommand& cmd, User& client);
 // Parse and dispatch raw buffers for connected clients using pollfds
 void commandParsing(char* messageBuffer, std::vector<pollfd>& fds, size_t index);
 
+void handlePing(int fd);
+void handleNick(User* curr, const std::vector<std::string>& tokens, const std::string& raw);
+void handleKick(User* requester,
+                const std::string& channelName,
+                const std::string& targetNick,
+                const std::string& reason);
+void handleJoin(User* curr, int fd, const std::string& chanArg);
+void handlePrivmsg(User* curr, int fd, const std::vector<std::string>& tokens, const std::string& raw);
+void handleInvite(User* curr, const std::string& target);
+void handleTopic(User* curr, const std::string& raw);
+void handleQuit(int fd);
+
 #endif // PARSING_HPP

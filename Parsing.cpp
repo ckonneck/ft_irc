@@ -1,121 +1,249 @@
-#include "Server.hpp"
+// Parsing.cpp
 
+#include "Parsing.hpp"    // your declarations
+#include "Chatroom.hpp"
+#include "User.hpp"
+#include "Chatroom.hpp"
+#include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+#include <poll.h>
+
+
+// these live somewhere in your .cpp/.h pair:
+extern std::map<std::string,Chatroom*> g_chatrooms;
+extern std::string servername;
+
+// Dispatcher
 void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
 {
-    std::string mBuf(messagebuffer);
-    std::cout << "the command is " << mBuf << std::endl;
-    User *curr = findUserByFD(fds[i].fd);
-    std::cout << "this is tha nicknamuin commando: "<< curr->getNickname() << std::endl;
-    std::vector<std::string> mVec = split(mBuf, ' ');
-    if (mBuf.find("PING") == 0)
+    std::string raw(messagebuffer);
+    std::vector<std::string> tokens = split(raw, ' ');
+    if (tokens.empty()) return;
+
+    int fd = fds[i].fd;
+    User *curr = findUserByFD(fd);
+
+    const std::string &cmd = tokens[0];
+    if      (cmd == "PING")     handlePing(fd);
+    else if (cmd == "NICK" && tokens.size() > 1)
+                                 handleNick(curr, tokens, raw);
+  else if (cmd == "KICK" && tokens.size() > 2)
+{
+    std::string channelName = tokens[1];
+    std::string targetNick  = tokens[2];
+
+    // grab optional reason after the first " :"
+    std::string reason;
+    size_t pos = raw.find(" :");
+    if (pos != std::string::npos)
+        reason = raw.substr(pos + 2);
+
+    handleKick(curr, channelName, targetNick, reason);
+}
+
+    else if (cmd == "JOIN" && tokens.size() > 1)
+                                 handleJoin(curr, fd, tokens[1]);
+    else if (cmd == "PRIVMSG")
+                                 handlePrivmsg(curr, fd, tokens, raw);
+    else if (cmd == "INVITE" && tokens.size() > 1)
+                                 handleInvite(curr, tokens[1]);
+    else if (cmd == "TOPIC" && tokens.size() > 1)
+                                 handleTopic(curr, raw);
+    else if (cmd == "QUIT")
+                                 handleQuit(fd);
+}
+
+// Handlers
+
+void handlePing(int fd)
+{
+    const std::string resp = "PONG :localhost\r\n";
+    send(fd, resp.c_str(), resp.length(), 0);
+}
+
+void handleNick(User* curr,
+                const std::vector<std::string>& tokens,
+                const std::string& raw)
+{
+    // suppress unused warning for tokens
+    (void)tokens;
+
+    std::string oldnick = curr->getNickname();
+    std::string newnick = parseNick(raw);
+    curr->setNickname(newnick);
+    curr->HSNick(oldnick, newnick);
+}
+
+// In your command‐dispatcher, parse: KICK <channel> <user> [:<reason>]
+// then call something like:
+#include <algorithm>
+#include "User.hpp"
+#include "Chatroom.hpp"
+
+
+void handleKick(User* requester,
+                const std::string& channelName,
+                const std::string& targetNick,
+                const std::string& reason)
+{
+    // 1) find channel in the global map
+    std::map<std::string,Chatroom*>::iterator mit
+        = g_chatrooms.find(channelName);
+    if (mit == g_chatrooms.end())
     {
-        std::string response = "PONG :localhost\r\n";
-        send(fds[i].fd, response.c_str(), response.length(), 0);
+        // 471 = ERR_NOSUCHCHANNEL
+        std::string msg = ":" + servername +
+            " 471 " + requester->getNickname() +
+            " " + channelName +
+            " :No such channel\r\n";
+        requester->sendMsg(msg);
+        return;
     }
-    if (mBuf.find("NICK") == 0 && mVec.size() > 1)
+    Chatroom* chan = mit->second;
+
+    // 2) Not on channel? 442 ERR_NOTONCHANNEL
+    if (!chan->isMember(requester))
     {
-        std::cout << "found /NICK on position 0" << std::endl;
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        std::string oldnick = curr->getNickname();
-        std::string newnick = parseNick(mBuf);
-        curr->setNickname(newnick);
-        curr->HSNick(oldnick, newnick);
-        std::cout << "this is tha nicknamuin commando2222: "<< curr->getNickname() << std::endl;
+        std::string msg = ":" + servername +
+            " 442 " + requester->getNickname() +
+            " " + channelName +
+            " :You're not on that channel\r\n";
+        requester->sendMsg(msg);
+        return;
     }
-    if (mBuf.find("KICK") == 0 && mVec.size() > 1)
+
+    // 3) Not an operator? 482 ERR_CHANOPRIVSNEEDED
+    if (!chan->isOperator(requester))
     {
-        std::cout << "found /KICK on position 0" << std::endl;
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
+        std::string msg = ":" + servername +
+            " 482 " + requester->getNickname() +
+            " " + channelName +
+            " :You're not channel operator\r\n";
+        requester->sendMsg(msg);
+        return;
     }
-    if (mBuf.find("JOIN") == 0 && mVec.size() > 1)
+
+    // 4) Look up the victim
+    User* victim = chan->findUserByNick(targetNick);
+    if (victim == NULL)
     {
-        std::cout << "found /JOIN on position 0" << std::endl;
-        
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        std::string chanName = sanitize(mVec[1]);
-        if (chanName[0] != '#')
+        // 441 ERR_USERNOTINCHANNEL
+        std::string msg = ":" + servername +
+            " 441 " + requester->getNickname() +
+            " " + targetNick +
+            " " + channelName +
+            " :They aren't on that channel\r\n";
+        requester->sendMsg(msg);
+        return;
+    }
+
+    // 5) Build the KICK line
+    std::string textReason = reason.empty() ? targetNick : reason;
+    std::string kickLine = ":" + requester->getNickname() +
+        "!" + requester->getUsername() +
+        "@" + requester->getHostname() +
+        " KICK " + channelName +
+        " " + targetNick +
+        " :" + textReason + "\r\n";
+
+    // 6) Broadcast to everyone in the channel
+    chan->broadcast(kickLine, NULL);
+
+    // 7) Send it to the kicked user
+    victim->sendMsg(kickLine);
+
+    // 8) Finally remove them
+    chan->removeUser(victim);
+}
+
+
+
+
+void handleJoin(User* curr, int fd, const std::string& chanArg)
+{
+    std::string chanName = sanitize(chanArg);
+    if (chanName.empty() || chanName[0] != '#')
+    {
+        std::cout << "  Invalid channel name " << chanArg << std::endl;
+        return;
+    }
+
+    Chatroom *chan = NULL;
+    std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(chanName);
+    if (it == g_chatrooms.end())
+    {
+        chan = new Chatroom(chanName);
+        g_chatrooms[chanName] = chan;
+    }
+    else
+    {
+        chan = it->second;
+    }
+
+    chan->addUser(curr);
+    std::string msg = ":" + curr->getNickname() + " JOIN :" + chanName + "\r\n";
+    chan->broadcast(msg, NULL);
+    join_channel(fd, curr->getNickname(), chanName);
+}
+
+void handlePrivmsg(User* curr,
+                   int fd,
+                   const std::vector<std::string>& tokens,
+                   const std::string& raw)
+{
+    if (tokens.size() < 3) return;
+
+    std::string target = tokens[1];
+    size_t pos = raw.find(" :");
+    std::string text = (pos != std::string::npos)
+                       ? raw.substr(pos + 2)
+                       : "";
+
+    if (!target.empty() && target[0] == '#')
+    {
+        std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(target);
+        if (it != g_chatrooms.end())
         {
-            std::cout <<"  Invalid channel name " << std::endl;
-            return;
-        }
-        Chatroom* chan = NULL;
-        if(g_chatrooms.find(chanName) == g_chatrooms.end())
-        {
-            chan = new Chatroom(chanName);
-            // std::cout << "debug lalala"<< chanName << std::endl;
-            //         for (size_t j = 0; j < chanName.size(); ++j) {
-            //             std::cout << "target[" << j << "] = '" << chanName[j] << "' (0x" 
-            //             << std::hex << (int)(unsigned char)chanName[j] << ")" << std::endl;
-            // }
-            g_chatrooms[chanName] = chan;
+            Chatroom* chan = it->second;
+            std::string full = ":" + curr->getNickname()
+                             + " PRIVMSG " + target
+                             + " :" + text + "\r\n";
+            chan->broadcast(full, curr);
         }
         else
         {
-            std::cout << "debug lalala222: " << chanName << std::endl;
-            chan = g_chatrooms[chanName];
+            send_to_client(fd, "403 " + target + " :No such channel\r\n");
         }
-
-        chan->addUser(curr);
-        std::string msg = ":" + curr->getNickname() + " JOIN :" + chanName + "\r\n";
-        chan->broadcast(msg, NULL); // NULL = broadcast to all
-        join_channel(fds[i].fd, curr->getNickname(), chan->getName());
     }
-    if (mBuf.find("PRIVMSG") == 0)
+    else
     {
-        std::cout << "WE IN HERE" << std::endl;
-        if (mVec.size() < 3) return;
-        std::string target = mVec[1];
-
-         std::cout << "WE IN HERE2" << std::endl;
-        size_t msg_start = mBuf.find(" :", 0);
-        std::string actual_message = (msg_start != std::string::npos)
-        ? mBuf.substr(msg_start + 2) : "";
-        std::cout << "target is: " << target << std::endl;
-        std::cout << "target 0 is: " << target[0] << std::endl;
-        for (size_t j = 0; j < target.size(); ++j) {
-    std::cout << "target[" << j << "] = '" << target[j] << "' (0x" 
-              << std::hex << (int)(unsigned char)target[j] << ")" << std::endl;
+        // TODO: private user‐to‐user messaging
+    }
 }
 
-        if (target[0] == '#')
-        {
-            std::cout << "WE IN HERE2.5" << std::endl;
-            for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin(); it != g_chatrooms.end(); ++it)
-            {
-                std::cout << "Channel nameIT: " << it->first << std::endl;
-            }
+void handleInvite(User* curr, const std::string& target)
+{
+    // suppress unused warning for curr
+    (void)curr;
 
-            // if (g_chatrooms.find(target) == g_chatrooms.end())
-            // {
-            //     std::cout << "WE IN HERE2.7" << std::endl;
+    std::cout << "INVITE requested for " << target << std::endl;
+    // TODO: implement INVITE logic
+}
 
-            //     send_to_client(fds[i].fd, "403 " + target + " :No such channel\r\n");
-            //     return;
-            // }
-            std::cout << "WE IN HERE3" << std::endl;
-            Chatroom* chan = g_chatrooms[target];
-            std::string fullMsg = ":" + curr->getNickname() + " PRIVMSG " + target + " :" + actual_message + "\r\n";
-            chan->broadcast(fullMsg, curr);
-    } else {
-        // Private message to a user
-    }
-    }
-    if (mBuf.find("INVITE") == 0 && mVec.size() > 1)
-    {
-        std::cout << "found /INVITE on position 0" << std::endl;
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-    }
-    if (mBuf.find("TOPIC") == 0 && mVec.size() > 1)
-    {
-        std::cout << "found /TOPIC on position 0" << std::endl;
-        std::cout << "found "<< mVec[1] <<" on position 1" << std::endl;
-        //to pass full topic, should use the full vector minus the first word
-        //which will be /TOPIC
-    }
-    if (mBuf.find("QUIT") == 0 && mVec.size() >= 1)
-    {
-        removeUser(findUserByFD(fds[i].fd));
-        std::cout << "got rid of " <<  fds[i].fd << std::endl;
-    }
-    
+void handleTopic(User* curr, const std::string& raw)
+{
+    // suppress unused warning for curr
+    (void)curr;
+
+    std::cout << "TOPIC command raw line: " << raw << std::endl;
+    // TODO: parse and apply topic
+}
+
+void handleQuit(int fd)
+{
+    User* u = findUserByFD(fd);
+    removeUser(u);
+    std::cout << "got rid of FD " << fd << std::endl;
 }

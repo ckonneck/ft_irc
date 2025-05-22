@@ -44,6 +44,14 @@ void User::newclient(int server_fd, std::vector<pollfd> &fds)
     
 
 }
+
+#include <unistd.h>   // for write()
+void User::sendMsg(const std::string& msg)
+{
+    int fd = _FD;
+    write(fd, msg.c_str(), msg.size());
+}
+
 std::string parseNick(const std::string &msg)
 {
     size_t pos = msg.find("NICK");

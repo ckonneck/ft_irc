@@ -25,6 +25,7 @@ class User
         void setUser(const std::string &user_str);
         void setRegis(bool status);
         bool isRegis();
+		void sendMsg(const std::string& msg);
     private:
         bool _isOP;
         bool _isRegis;

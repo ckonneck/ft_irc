@@ -1,4 +1,7 @@
 #include "Server.hpp"
+
+std::string servername = "server-chan";
+
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 {
     for (size_t i = 0; i < fds.size(); i++) {

@@ -17,6 +17,9 @@ class Chatroom
         time_t getTopicTime();
         void addUser(User *user);
         void removeUser(User* user);
+		  bool isMember(User* u) const;
+    bool isOperator(User* u) const;
+    User* findUserByNick(const std::string& nick);
 
     private:
         time_t _topicTime;
@@ -27,4 +30,6 @@ class Chatroom
         std::string _channelmode;
         std::string _lastTopicSetter;
 		std::vector<User*> members_in_room;
+		std::vector<User*> operators_of_room;
 };
+

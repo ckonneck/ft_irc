@@ -17,6 +17,34 @@ Chatroom::Chatroom(const std::string &name)
 
 }
 
+bool Chatroom::isMember(User* u) const
+{
+    return std::find(members_in_room.begin(),
+                     members_in_room.end(),
+                     u)
+           != members_in_room.end();
+}
+
+bool Chatroom::isOperator(User* u) const
+{
+    return std::find(operators_of_room.begin(),
+                     operators_of_room.end(),
+                     u)
+           != operators_of_room.end();
+}
+
+User* Chatroom::findUserByNick(const std::string& nick)
+{
+    // explicit iterator loop because C++98 has no range‐for
+    for (std::vector<User*>::iterator it = members_in_room.begin();
+         it != members_in_room.end(); 
+         ++it)
+    {
+        if ((*it)->getNickname() == nick)
+            return *it;
+    }
+    return NULL;  // use NULL in C++98
+}
 
 void Chatroom::displayTopic()
 {
