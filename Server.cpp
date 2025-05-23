@@ -4,7 +4,8 @@ std::string servername = "server-chan";
 
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 {
-    for (size_t i = 0; i < fds.size(); i++) {
+    for (size_t i = 0; i < fds.size(); i++)
+    {
         if (fds[i].revents & POLLIN) {
 			 // Handle input from server terminal
             if (fds[i].fd == STDIN_FILENO)
@@ -19,6 +20,7 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                 
                 User::newclient(server_fd, fds);
                 std::cout << "found new client" << std::endl;
+                i++;
                 continue;
             }
             char buffer[1024];
@@ -27,10 +29,15 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                 std::cout << "Client disconnected: FD " << fds[i].fd << std::endl;
                 close(fds[i].fd);
                 fds.erase(fds.begin() + i);
-                User *old = findUserByFD(server_fd);
-                std::cout << "deleting old" << std::endl;
+                User *old = findUserByFD(fds[i].fd);
+                if(old == NULL)
+                {
+                    std::cout << "prevented segfault" << std::endl;
+                    continue;
+                }
+                std::cout << "deleting old" << std::endl;//QUIT COMMAND MAYBE
                 removeUser(old);
-                --i;
+                i--;
                 continue;
             }
             buffer[n] = '\0';
@@ -46,7 +53,7 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                 user->setNickname(nick);
                 user->setHostname(host);
                 user->setUser(user_str);
-                if(user->getNickname() != "" && user->getHostname() != "" && user->getUsername() != "")
+                if(user->getNickname() != "" && user->getHostname() != "" && user->getUsername() != "")//this sometimes has hiccups
                 {
                     user->setRegis(true);
                     std::cout << "USER " << nick << " HAS BEEN ABSOLUTELY VERIFIED FOR SURE" << std::endl;
@@ -89,8 +96,6 @@ void welcomemessage()
 {
     std::cout << "server-chan has been started UwU" << std::endl;
     std::cout << "type exit to exit UwU" << std::endl;
-    std::cout << "if you wanna connect to this, the easiest way is to " << std::endl;
-    std::cout << "open another cmdwindow and type: telnet localhost 6667" << std::endl;
     std::cout << "have fun and don't be a mean cookie UwU" << std::endl;
 }
 bool serverexit()
@@ -124,7 +129,7 @@ void join_channel(int client_fd, const std::string& nickname, const std::string&
 }
 
 
-void messagehandling(std::vector<pollfd> &fds, size_t i)
+void messagehandling(std::vector<pollfd> &fds, size_t i)//obsolete
 {
     char messagebuffer[2024];
     int n = recv(fds[i].fd, messagebuffer, sizeof(messagebuffer) - 1, 0);

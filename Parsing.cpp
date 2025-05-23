@@ -52,8 +52,8 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
                                  handleInvite(curr, tokens[1]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
                                  handleTopic(curr, raw);
-    else if (cmd == "QUIT")
-                                 handleQuit(fd);
+    // else if (cmd == "QUIT")
+    //                              handleQuit(fd);            //whoaaaaaaaaaaaaaaawe doing double deletion with this oneeeeee.. check serverloooooop
 }
 
 
@@ -69,14 +69,17 @@ void handleNick(User* curr,
 {
     // suppress unused warning for tokens
     (void)tokens;
-
     std::string oldnick = curr->getNickname();
     std::string newnick = parseNick(raw);
+    if (findUserByNickname(newnick) != NULL)
+    {
+        std::string err = ":localhost 433 * " + newnick + " :Nickname is already in use\r\n";
+        send(findUserByNickname(oldnick)->getFD(), err.c_str(), err.length(), 0);
+        return;
+    }
     curr->setNickname(newnick);
     curr->HSNick(oldnick, newnick);
 }
-
-
 
 
 
