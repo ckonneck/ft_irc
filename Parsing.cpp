@@ -163,6 +163,10 @@ void handleKick(User* requester,
 
 void handleJoin(User* curr, int fd, const std::string& chanArg)
 {
+	if (uniqueNick(curr) == false)
+		
+			return;
+	std::cout << "debug1=99" << std::endl;
     std::string chanName = sanitize(chanArg);
     if (chanName.empty() || chanName[0] != '#')
     {

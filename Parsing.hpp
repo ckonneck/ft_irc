@@ -44,5 +44,6 @@ void handlePrivmsg(User* curr, int fd, const std::vector<std::string>& tokens, c
 void handleInvite(User* curr, const std::string& target);
 void handleTopic(User* curr, const std::string& raw);
 void handleQuit(int fd);
+bool uniqueNick(User* usr);
 
 #endif // PARSING_HPP

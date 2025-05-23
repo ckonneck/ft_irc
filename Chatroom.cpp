@@ -25,6 +25,51 @@ bool Chatroom::isMember(User* u) const
            != members_in_room.end();
 }
 
+#include <vector>
+#include <string>
+
+bool uniqueNick(User* usr)
+{
+    const std::string& nick = usr->getNickname();
+std::cout << "debug1" << std::endl;
+    // length must be 1..9
+    if (nick.empty() || nick.size() > 9)
+        return false;
+std::cout << "debug2" << std::endl;
+    // check each character
+    for (size_t i = 0; i < nick.size(); ++i)
+    {
+        char c = nick[i];
+            // first char: must be in 'A'..'}'
+            if (!((c >= 45 && c <= 57) || (c >= 65 && c<= 125)))
+				//432 ERR_ERRONEUSNICKNAME "<nick> :Erroneus nickname"
+				{
+				std::string msg =" 432 ERR_ERRONEUSNICKNAME " + usr->getNickname() +" :Erroneous nickname\r\n";
+   			    usr->sendMsg(msg);
+				   return false;
+				}
+				
+    }
+std::cout << "debug3" << std::endl;
+    // now ensure no other user already has that nick
+    for (size_t j = 0; j < g_mappa.size(); ++j)
+    {
+        User* u = g_mappa[j];
+        if (u != usr && u->getNickname() == nick)
+		{
+			//433 ERR_NICKNAMEINUSE "<nick> :Nickname is already in use"
+				std::string msg =" 433 ERR_NICKNAMEINUSE " + usr->getNickname() +" :Nickname is already in use\r\n";
+   			    usr->sendMsg(msg);
+            return false;
+		}
+    }
+	std::cout << "debug4" << std::endl;
+
+    return true;
+}
+
+
+
 void Chatroom::addOperator(User* u)
 {
     // avoid duplicates
