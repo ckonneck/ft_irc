@@ -90,9 +90,9 @@ void handleKick(User* requester,
         = g_chatrooms.find(channelName);
     if (mit == g_chatrooms.end())
     {
-        // 471 = ERR_NOSUCHCHANNEL
+        // 403 = ERR_NOSUCHCHANNEL
         std::string msg = ":" + servername +
-            " 471 " + requester->getNickname() +
+            " 403 " + requester->getNickname() +
             " " + channelName +
             " :No such channel\r\n";
         requester->sendMsg(msg);
@@ -150,7 +150,7 @@ void handleKick(User* requester,
 
     // 7) Send it to the kicked user
     victim->sendMsg(kickLine);
-
+    
     // 8) Finally remove them
     chan->removeUser(victim);
 }
