@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 #include <mutex>
+#include <regex>
 #include <cstring>
 #include <cerrno>
 #include <unistd.h>
@@ -14,21 +15,18 @@
 
 int main() {
     // 🌈 Server infos~ Meowster setup!!! 🐾💖
-    const char* server   = "127.0.0.1"; // (≧◡≦) Local kitty server!
-    const char* port     = "6667";      // Nyaa~ your local IRC server port! :3
+    const char* server = "127.0.0.1"; // (≧◡≦) Local kitty server!
+    const char* port   = "6667";
+    const std::string nickname = "NYAN2";
 
-    // 🌸 Our bot's adorable identity nya~!!
-    const std::string nickname = "OwO";
-    const std::string username = "owobot";
-    const std::string realname = "OwO Cat-Bot desu~ 🐱✨";
-
-    // 🌼 Let's resolve the server address~! nyaaan~ 🌐
+    // 🗺️ Resolve the address~ nya!
     addrinfo hints{}, *res = nullptr;
     hints.ai_family   = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     int gai = getaddrinfo(server, port, &hints, &res);
     if (gai != 0) {
-        std::cerr << "Oh noes~ >w< getaddrinfo failed: " << gai_strerror(gai) << " 😿\n";
+        std::cerr << "Oh noes~ >w< getaddrinfo failed: "
+                  << gai_strerror(gai) << " 😿\n";
         return 1;
     }
 
@@ -54,20 +52,22 @@ int main() {
     auto send_raw = [&](const std::string &cmd) {
         std::string out = cmd + "\r\n";
         std::lock_guard<std::mutex> lk(send_mtx);
-        if (::send(sock, out.data(), out.size(), 0) < 0) {
-            std::perror("Meowww~ sending failed nya >w<");
-        }
+        send(sock, out.c_str(), out.size(), 0);
     };
 
-    // 🐾 Time to say hewwo to da server~!! Nyaa! :3
-    send_raw("NICK " + nickname);
-    send_raw("USER " + username + " 0 * :" + realname);
+    // 🍮 Moved channel tracking here
+    std::string current_chan;
+    std::mutex chan_mtx;
 
     // 🐱 Listening for messages like a curious kitten~!! 💌🐾
     std::thread reader([&]() {
         char buf[512];
+        // regex to detect server JOIN confirmations
+        const std::regex join_re(R"(^:([^!]+)![^ ]+ JOIN :?(#\S+))");
+        std::smatch m;
+
         while (true) {
-            ssize_t n = recv(sock, buf, sizeof(buf)-1, 0);
+            ssize_t n = recv(sock, buf, sizeof(buf) - 1, 0);
             if (n < 0) {
                 std::perror("Nyaa~ couldn't receive message 😿");
                 break;
@@ -77,9 +77,19 @@ int main() {
                 break;
             }
             buf[n] = '\0';
+            // print *all* server messages
             std::cout << buf;
 
-            // 💖 Ping pong time~ like a game! (o^▽^o) nya~!
+            // 🐾 Only print the “Joined” echo when the server confirms it
+            std::string s(buf);
+            if (std::regex_search(s, m, join_re) && m[1] == nickname) {
+                std::lock_guard<std::mutex> lock(chan_mtx);
+                current_chan = m[2];
+                std::cout << "Nyaa~ Joined nya channel: "
+                          << current_chan << " 🐾💖\n";
+            }
+
+            // 💖 Ping-pong reply
             if (std::strncmp(buf, "PING ", 5) == 0) {
                 char *eol = std::strchr(buf, '\r');
                 std::string token;
@@ -95,7 +105,7 @@ int main() {
     });
 
     // 🌟 UwU Time to chat!! Let the kitty type~ 😽💬
-    std::string line, current_chan;
+    std::string line;
     while (std::getline(std::cin, line)) {
         if (line.empty()) continue;
 
@@ -103,14 +113,11 @@ int main() {
             std::string cmd = line.substr(1);
             send_raw(cmd);
 
-            if (cmd.rfind("JOIN ", 0) == 0) {
-                current_chan = cmd.substr(5);
-                std::cout << "Nyaa~ Joined nya channel: " << current_chan << " 🐾💖\n";
-            }
             if (cmd.rfind("QUIT", 0) == 0) {
                 std::cout << "Bai bai nya~! Leaving with paw-shion~ 💕🐾\n";
                 break;
             }
+            // JOIN handling is now entirely driven by the reader thread
         }
         else if (!current_chan.empty()) {
             send_raw("PRIVMSG " + current_chan + " :" + line);
@@ -120,7 +127,7 @@ int main() {
         }
     }
 
-    // 🧹 Time to clean up the kitty litter! I mean... IRC session~ nyaaa~ 🧼🐾
+    // 🧹 Clean up
     if (reader.joinable()) reader.join();
     close(sock);
     std::cout << "UwU bot signing off... nyaaa~! 💖🐱✨\n";

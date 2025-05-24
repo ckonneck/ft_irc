@@ -2,6 +2,16 @@
 
 std::string servername = "server-chan";
 
+void cleanupUser(User* u) {
+    std::map<std::string,Chatroom*>::iterator it;
+    for (it = g_chatrooms.begin(); it != g_chatrooms.end(); ++it) {
+        Chatroom* chan = it->second;
+        chan->removeUser(u);
+        chan->removeOperator(u);
+    }
+    removeUser(u);
+}
+
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 {
     for (size_t i = 0; i < fds.size(); i++)
@@ -25,21 +35,25 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             }
             char buffer[1024];
             ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
-            if (n <= 0) {
-                std::cout << "Client disconnected: FD " << fds[i].fd << std::endl;
-                close(fds[i].fd);
-                fds.erase(fds.begin() + i);
-                User *old = findUserByFD(fds[i].fd);
-                if(old == NULL)
-                {
-                    std::cout << "prevented segfault" << std::endl;
-                    continue;
-                }
-                std::cout << "deleting old" << std::endl;//QUIT COMMAND MAYBE
-                removeUser(old);
-                i--;
-                continue;
-            }
+if (n <= 0) {
+    int disc_fd = fds[i].fd;
+    std::cout << "Client disconnected: FD " << disc_fd << std::endl;
+    close(disc_fd);
+
+    // remove this fd from the poll list
+    fds.erase(fds.begin() + i);
+    User* old = findUserByFD(disc_fd);
+    if (old) {
+        cleanupUser(old);
+        std::cout << "Cleaned up User* for FD " << disc_fd << std::endl;
+    } else {
+        std::cout << "No matching User* for FD " << disc_fd << std::endl;
+    }
+    --i;
+    continue;
+}
+
+
             buffer[n] = '\0';
             std::string msg(buffer);
             std::cout << "Received from " << fds[i].fd << ": " << msg;
@@ -61,8 +75,6 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                 }
                 continue;
             }
-            // Data from existing client
-            
             commandParsing(buffer, fds, i);
         }
     }
@@ -79,18 +91,17 @@ void User::setRegis(bool status)
 }
 
 void removeUser(User* target) {
-    // Step 1: move all non-target pointers to the front, get new logical end
-    std::vector<User*>::iterator newEnd =
-        std::remove(g_mappa.begin(), g_mappa.end(), target);
-
-    // Step 2: delete the removed User* objects
-    for (std::vector<User*>::iterator it = newEnd; it != g_mappa.end(); ++it) {
-        delete *it;
+    for (std::vector<User*>::iterator it = g_mappa.begin();
+         it != g_mappa.end(); ++it)
+    {
+        if (*it == target) {
+            delete *it;
+            g_mappa.erase(it);
+            return;
+        }
     }
-
-    // Step 3: actually erase them from the vector
-    g_mappa.erase(newEnd, g_mappa.end());
 }
+
 
 void welcomemessage()
 {

@@ -20,6 +20,8 @@ fclean: clean
 
 re: fclean all
 
+sanitize:
+	$(MAKE) CFLAGS="$(CFLAGS) -fsanitize=address -fsanitize=undefined" all
 
 # valgrind rule
 valgrind: $(NAME)
