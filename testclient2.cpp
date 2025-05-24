@@ -18,9 +18,9 @@ int main() {
     const char* port     = "6667";      // Nyaa~ your local IRC server port! :3
 
     // 🌸 Our bot's adorable identity nya~!!
-    const std::string nickname = "NYAN";
-    const std::string username = "NYAN";
-    const std::string realname = "NYAN Cat-Bot desu~ 🐱✨";
+    const std::string nickname = "OwO";
+    const std::string username = "owobot";
+    const std::string realname = "OwO Cat-Bot desu~ 🐱✨";
 
     // 🌼 Let's resolve the server address~! nyaaan~ 🌐
     addrinfo hints{}, *res = nullptr;

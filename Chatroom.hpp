@@ -22,6 +22,9 @@ class Chatroom
     User* findUserByNick(const std::string& nick);
     void addOperator(User* u);
     void removeOperator(User* u);
+    bool isInvited(User* u) const;
+    void inviteUser(User* u);
+    bool isInviteOnly() const;
 
     private:
         time_t _topicTime;
@@ -33,5 +36,7 @@ class Chatroom
         std::string _lastTopicSetter;
 		std::vector<User*> members_in_room;
 		std::vector<User*> operators_of_room;
+        std::vector<User*> invited_to_room;
+        bool invite_only;
 };
 

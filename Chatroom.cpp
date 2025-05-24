@@ -17,6 +17,13 @@ Chatroom::Chatroom(const std::string &name)
 
 }
 
+bool Chatroom::isInvited(User* u) const {
+    return std::find(invited_to_room.begin(),
+                     invited_to_room.end(),
+                     u) != invited_to_room.end();
+}
+
+
 bool Chatroom::isMember(User* u) const
 {
     return std::find(members_in_room.begin(),
@@ -121,16 +128,33 @@ User* Chatroom::findUserByNick(const std::string& nick)
     return NULL;  // use NULL in C++98
 }
 
+bool Chatroom::isInviteOnly() const {
+    return invite_only;
+}
+
+
 void Chatroom::displayTopic()
 {
     std::cout << _topic << std::endl;
 }
 
-void Chatroom::addUser(User *user)
-{
+void Chatroom::addUser(User* user) {
     members_in_room.push_back(user);
-    std::cout << user->getNickname() << "got pushed backinto the members" << std::endl;
+   // consume a one-time invite
+   invited_to_room.erase(
+       std::remove(invited_to_room.begin(),
+                   invited_to_room.end(),
+                   user),
+       invited_to_room.end()
+   );
 }
+
+void Chatroom::inviteUser(User* u) {
+    // avoid duplicate invites
+    if (!isInvited(u))
+        invited_to_room.push_back(u);
+}
+
 
 void Chatroom::removeUser(User* user)
 {

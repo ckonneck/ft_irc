@@ -41,7 +41,9 @@ void handleKick(User* requester,
                 const std::string& reason);
 void handleJoin(User* curr, int fd, const std::string& chanArg);
 void handlePrivmsg(User* curr, int fd, const std::vector<std::string>& tokens, const std::string& raw);
-void handleInvite(User* curr, const std::string& target);
+void handleInvite(User* curr,
+                  const std::string& targetNick,
+                  const std::string& channelName);
 void handleTopic(User* curr, const std::string& raw);
 void handleQuit(int fd);
 bool uniqueNick(User* usr);

@@ -27,7 +27,8 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     User *curr = findUserByFD(fd);
 
     const std::string &cmd = tokens[0];
-    if      (cmd == "PING")     handlePing(fd);
+    if      (cmd == "PING")
+        handlePing(fd);
     else if (cmd == "NICK" && tokens.size() > 1)
                                  handleNick(curr, tokens, raw);
   else if (cmd == "KICK" && tokens.size() > 2)
@@ -48,8 +49,8 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
                                  handleJoin(curr, fd, tokens[1]);
     else if (cmd == "PRIVMSG")
                                  handlePrivmsg(curr, fd, tokens, raw);
-    else if (cmd == "INVITE" && tokens.size() > 1)
-                                 handleInvite(curr, tokens[1]);
+       else if (cmd == "INVITE" && tokens.size() > 2)
+        handleInvite(curr, tokens[1], tokens[2]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
                                  handleTopic(curr, raw);
     // else if (cmd == "QUIT")
@@ -187,6 +188,15 @@ void handleJoin(User* curr, int fd, const std::string& chanArg)
     {
         chan = it->second;
     }
+  if (chan->isInviteOnly() && !chan->isInvited(curr)) {
+    // 473 = ERR_INVITEONLYCHAN
+    std::string err = ":" + servername +
+        " 473 " + curr->getNickname() +
+        " " + chanName +
+        " :Cannot join channel (+i)\r\n";
+    curr->sendMsg(err);
+    return;
+}
 
     chan->addUser(curr);
     std::string msg = ":" + curr->getNickname() + " JOIN :" + chanName + "\r\n";
@@ -229,13 +239,75 @@ void handlePrivmsg(User* curr,
     }
 }
 
-void handleInvite(User* curr, const std::string& target)
+void handleInvite(User* curr,
+                  const std::string& targetNick,
+                  const std::string& channelName)
 {
-    // suppress unused warning for curr
-    (void)curr;
+    // 1) channel exists?
+    std::map<std::string,Chatroom*>::iterator it
+        = g_chatrooms.find(channelName);
+    if (it == g_chatrooms.end()) {
+        // 403 = ERR_NOSUCHCHANNEL
+        std::string msg = ":" + servername +
+            " 403 " + curr->getNickname() +
+            " " + channelName +
+            " :No such channel\r\n";
+        curr->sendMsg(msg);
+        return;
+    }
+    Chatroom* chan = it->second;
 
-    std::cout << "INVITE requested for " << target << std::endl;
-    // TODO: implement INVITE logic
+    // 2) inviter is on channel?
+    if (!chan->isMember(curr)) {
+        std::string msg = ":" + servername +
+            " 442 " + curr->getNickname() +
+            " " + channelName +
+            " :You're not on that channel\r\n";
+        curr->sendMsg(msg);
+        return;
+    }
+
+    // 3) inviter is operator?
+    if (!chan->isOperator(curr)) {
+        std::string msg = ":" + servername +
+            " 482 " + curr->getNickname() +
+            " " + channelName +
+            " :You're not channel operator\r\n";
+        curr->sendMsg(msg);
+        return;
+    }
+
+    // 4) target user exists?
+    User* target = findUserByNickname(targetNick);
+    if (!target) {
+        // 401 = ERR_NOSUCHNICK
+        std::string msg = ":" + servername +
+            " 401 " + curr->getNickname() +
+            " " + targetNick +
+            " :No such nick/channel\r\n";
+        curr->sendMsg(msg);
+        return;
+    }
+
+    // 5) record the invitation so they can JOIN an +i channel
+   chan->inviteUser(target);
+
+  // 6) RPL_INVITING back to inviter (341)
+     std::string reply = ":" + servername +
+         " 341 " + curr->getNickname() +
+         " " + targetNick +
+         " " + channelName + "\r\n";
+     curr->sendMsg(reply);
+
+    // 7) send actual INVITE message to the invitee
+     std::string inviteMsg = ":" +
+         curr->getNickname() + "!" +
+         curr->getUsername() + "@" +
+         curr->getHostname() +
+         " INVITE " + targetNick +
+         " :" + channelName + "\r\n";
+     target->sendMsg(inviteMsg);
+
 }
 
 void handleTopic(User* curr, const std::string& raw)
