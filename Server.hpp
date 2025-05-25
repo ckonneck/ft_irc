@@ -15,12 +15,13 @@
 #include <algorithm>
 #include "Chatroom.hpp"
 #include "User.hpp"
+
+
 class Chatroom;
-
-
 
 extern std::map<std::string, Chatroom*> g_chatrooms;
 extern std::vector<User*> g_mappa;
+
 bool serverexit();
 void cleanup(std::vector<pollfd> &fds);
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd);

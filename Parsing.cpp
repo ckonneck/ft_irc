@@ -1,5 +1,3 @@
-// Parsing.cpp
-
 #include "Parsing.hpp"    // your declarations
 #include "Chatroom.hpp"
 #include "User.hpp"
@@ -30,7 +28,7 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     if      (cmd == "PING")
         handlePing(fd);
     else if (cmd == "NICK" && tokens.size() > 1)
-                                 handleNick(curr, tokens, raw);
+                                 handleNick(curr, raw);
   else if (cmd == "KICK" && tokens.size() > 2)
 {
     std::string channelName = tokens[1];
@@ -64,12 +62,8 @@ void handlePing(int fd)
     send(fd, resp.c_str(), resp.length(), 0);
 }
 
-void handleNick(User* curr,
-                const std::vector<std::string>& tokens,
-                const std::string& raw)
+void handleNick(User* curr, const std::string& raw)
 {
-    // suppress unused warning for tokens
-    (void)tokens;
     std::string oldnick = curr->getNickname();
     std::string newnick = parseNick(raw);
     if (findUserByNickname(newnick) != NULL)

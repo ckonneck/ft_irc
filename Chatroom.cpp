@@ -32,9 +32,6 @@ bool Chatroom::isMember(User* u) const
            != members_in_room.end();
 }
 
-#include <vector>
-#include <string>
-
 bool uniqueNick(User* usr)
 {
     const std::string& nick = usr->getNickname();
@@ -76,13 +73,10 @@ std::cout << "debug3" << std::endl;
 }
 
 
-
 void Chatroom::addOperator(User* u)
 {
-    // avoid duplicates
     if (!isOperator(u)) {
         operators_of_room.push_back(u);
-        // (optional) log it:
         std::cout << "User " << u->getNickname()
                   << " is now operator in " << _channelname
                   << std::endl;
@@ -117,7 +111,6 @@ bool Chatroom::isOperator(User* u) const
 
 User* Chatroom::findUserByNick(const std::string& nick)
 {
-    // explicit iterator loop because C++98 has no range‐for
     for (std::vector<User*>::iterator it = members_in_room.begin();
          it != members_in_room.end(); 
          ++it)
@@ -125,11 +118,20 @@ User* Chatroom::findUserByNick(const std::string& nick)
         if ((*it)->getNickname() == nick)
             return *it;
     }
-    return NULL;  // use NULL in C++98
+    return NULL;
 }
 
 bool Chatroom::isInviteOnly() const {
     return invite_only;
+}
+
+void Chatroom::uninviteUser(User* u) {
+    invited_to_room.erase(
+        std::remove(invited_to_room.begin(),
+                    invited_to_room.end(),
+                    u),
+        invited_to_room.end()
+    );
 }
 
 

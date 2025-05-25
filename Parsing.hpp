@@ -34,7 +34,7 @@ void handleCommand(const ParsedCommand& cmd, User& client);
 void commandParsing(char* messageBuffer, std::vector<pollfd>& fds, size_t index);
 
 void handlePing(int fd);
-void handleNick(User* curr, const std::vector<std::string>& tokens, const std::string& raw);
+void handleNick(User* curr, const std::string& raw);
 void handleKick(User* requester,
                 const std::string& channelName,
                 const std::string& targetNick,

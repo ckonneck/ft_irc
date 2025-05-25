@@ -17,14 +17,15 @@ class Chatroom
         time_t getTopicTime();
         void addUser(User *user);
         void removeUser(User* user);
-		  bool isMember(User* u) const;
-    bool isOperator(User* u) const;
-    User* findUserByNick(const std::string& nick);
-    void addOperator(User* u);
-    void removeOperator(User* u);
-    bool isInvited(User* u) const;
-    void inviteUser(User* u);
-    bool isInviteOnly() const;
+		bool isMember(User* u) const;
+        bool isOperator(User* u) const;
+        User* findUserByNick(const std::string& nick);
+        void addOperator(User* u);
+        void removeOperator(User* u);
+        bool isInvited(User* u) const;
+        void inviteUser(User* u);
+        bool isInviteOnly() const;
+        void uninviteUser(User* u);
 
     private:
         time_t _topicTime;

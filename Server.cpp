@@ -12,6 +12,7 @@ void cleanupUser(User* u) {
     removeUser(u);
 }
 
+
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 {
     for (size_t i = 0; i < fds.size(); i++)
@@ -35,25 +36,23 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             }
             char buffer[1024];
             ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
-if (n <= 0) {
-    int disc_fd = fds[i].fd;
-    std::cout << "Client disconnected: FD " << disc_fd << std::endl;
-    close(disc_fd);
+            if (n <= 0) {
+                int disc_fd = fds[i].fd;
+                std::cout << "Client disconnected: FD " << disc_fd << std::endl;
+                close(disc_fd);
 
-    // remove this fd from the poll list
-    fds.erase(fds.begin() + i);
-    User* old = findUserByFD(disc_fd);
-    if (old) {
-        cleanupUser(old);
-        std::cout << "Cleaned up User* for FD " << disc_fd << std::endl;
-    } else {
-        std::cout << "No matching User* for FD " << disc_fd << std::endl;
-    }
-    --i;
-    continue;
-}
-
-
+                // remove this fd from the poll list
+                fds.erase(fds.begin() + i);
+                User* old = findUserByFD(disc_fd);
+                if (old) {
+                    cleanupUser(old);
+                    std::cout << "Cleaned up User* for FD " << disc_fd << std::endl;
+                }else {
+                    std::cout << "No matching User* for FD " << disc_fd << std::endl;
+                    }
+                --i;
+                continue;
+            }
             buffer[n] = '\0';
             std::string msg(buffer);
             std::cout << "Received from " << fds[i].fd << ": " << msg;
@@ -91,14 +90,23 @@ void User::setRegis(bool status)
 }
 
 void removeUser(User* target) {
-    for (std::vector<User*>::iterator it = g_mappa.begin();
-         it != g_mappa.end(); ++it)
+ 
+    for (std::map<std::string, Chatroom*>::iterator mit = g_chatrooms.begin();
+         mit != g_chatrooms.end(); ++mit)
     {
-        if (*it == target) {
-            delete *it;
-            g_mappa.erase(it);
-            return;
-        }
+        Chatroom* chan = mit->second;
+        if (chan->isMember(target))
+            chan->removeUser(target);
+        if (chan->isOperator(target))
+            chan->removeOperator(target);
+        chan->uninviteUser(target);
+    }
+
+    std::vector<User*>::iterator uit
+        = std::find(g_mappa.begin(), g_mappa.end(), target);
+    if (uit != g_mappa.end()) {
+        delete *uit;
+        g_mappa.erase(uit);
     }
 }
 
