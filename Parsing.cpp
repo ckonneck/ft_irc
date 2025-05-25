@@ -10,6 +10,8 @@
 #include <algorithm>
 #include "User.hpp"
 #include "Chatroom.hpp"
+#include <cstdlib> 
+#include <sstream>  
 
 
 extern std::map<std::string,Chatroom*> g_chatrooms;
@@ -51,11 +53,149 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         handleInvite(curr, tokens[1], tokens[2]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
                                  handleTopic(curr, raw);
+    else if (cmd == "MODE" && tokens.size() > 2)
+       handleMode(curr, tokens[1], tokens[2], tokens);
     // else if (cmd == "QUIT")
     //                              handleQuit(fd);            //whoaaaaaaaaaaaaaaawe doing double deletion with this oneeeeee.. check serverloooooop
 }
 
 
+void handleMode(User* requester,
+                const std::string& chanName,
+                const std::string& flags,
+                const std::vector<std::string>& tokens)
+{
+    std::map<std::string,Chatroom*>::iterator itChan
+        = g_chatrooms.find(chanName);
+    if (itChan == g_chatrooms.end()) {
+        requester->sendMsg(":" + servername +
+                           " 403 " + requester->getNickname() +
+                           " " + chanName +
+                           " :No such channel\r\n");
+        return;
+    }
+    Chatroom* chan = itChan->second;
+    if (!chan->isMember(requester)) {
+        requester->sendMsg(":" + servername +
+                           " 442 " + requester->getNickname() +
+                           " " + chanName +
+                           " :You're not on that channel\r\n");
+        return;
+    }
+    if (!chan->isOperator(requester)) {
+        requester->sendMsg(":" + servername +
+                           " 482 " + requester->getNickname() +
+                           " " + chanName +
+                           " :You're not channel operator\r\n");
+        return;
+    }
+
+    // Parse flags
+    bool adding = true;
+    size_t argIdx = 3;                  
+    std::vector<std::string> argList;   
+
+    for (std::string::const_iterator fit = flags.begin();
+         fit != flags.end();
+         ++fit)
+    {
+        char m = *fit;
+        if (m == '+') { adding = true;  continue; }
+        if (m == '-') { adding = false; continue; }
+
+        if (m == 'i') {
+            chan->setInviteOnly(adding);
+        }
+        else if (m == 't') {
+            chan->setTopicOnlyOps(adding);
+        }
+        else if (m == 'k') {
+            if (adding) {
+                if (tokens.size() <= argIdx) {
+                    requester->sendMsg(":" + servername +
+                        " 461 " + requester->getNickname() +
+                        " MODE :Not enough parameters\r\n");
+                } else {
+                    chan->setKey(tokens[argIdx]);
+                    argList.push_back(tokens[argIdx]);
+                    ++argIdx;
+                }
+            } else {
+                chan->unsetKey();
+            }
+        }
+        else if (m == 'l') {
+            if (adding) {
+                if (tokens.size() <= argIdx) {
+                    requester->sendMsg(":" + servername +
+                        " 461 " + requester->getNickname() +
+                        " MODE :Not enough parameters\r\n");
+                } else {
+                    int lim = atoi(tokens[argIdx].c_str());
+                    chan->setLimit(lim);
+                    argList.push_back(tokens[argIdx]);
+                    ++argIdx;
+                }
+            } else {
+                chan->unsetLimit();
+            }
+        }
+        else if (m == 'o') {
+            if (tokens.size() <= argIdx) {
+                requester->sendMsg(":" + servername +
+                    " 461 " + requester->getNickname() +
+                    " MODE :Not enough parameters\r\n");
+            } else {
+                const std::string& nickArg = tokens[argIdx];
+                argList.push_back(nickArg);
+                ++argIdx;
+                User* globalU = findUserByNickname(nickArg);
+                if (!globalU) {
+                    requester->sendMsg(":" + servername +
+                        " 401 " + requester->getNickname() +
+                        " " + nickArg +
+                        " :No such nick/channel\r\n");
+                }
+                else {
+                    User* memberU = chan->findUserByNick(nickArg);
+                    if (!memberU) {
+                        requester->sendMsg(":" + servername +
+                            " 441 " + requester->getNickname() +
+                            " " + nickArg +
+                            " " + chanName +
+                            " :They aren't on that channel\r\n");
+                    } else {
+                        if (adding)  chan->addOperator(memberU);
+                        else         chan->removeOperator(memberU);
+                    }
+                }
+            }
+        }
+        else {
+            // unknown
+            requester->sendMsg(":" + servername +
+                " 472 " + requester->getNickname() +
+                " " + std::string(1,m) +
+                " :is unknown mode char to me\r\n");
+        }
+    }
+
+    // Broadcast final MODE line
+    std::ostringstream oss;
+    oss << ":" << requester->getNickname()
+        << "!" << requester->getUsername()
+        << "@" << requester->getHostname()
+        << " MODE " << chanName
+        << " " << flags;
+    for (std::vector<std::string>::iterator it = argList.begin();
+         it != argList.end();
+         ++it)
+    {
+        oss << " " << *it;
+    }
+    oss << "\r\n";
+    chan->broadcast(oss.str(), NULL);
+}
 void handlePing(int fd)
 {
     const std::string resp = "PONG :localhost\r\n";

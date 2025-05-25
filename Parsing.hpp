@@ -46,6 +46,10 @@ void handleInvite(User* curr,
                   const std::string& channelName);
 void handleTopic(User* curr, const std::string& raw);
 void handleQuit(int fd);
+void handleMode(User* requester,
+                const std::string& chanName,
+                const std::string& flags,
+                const std::vector<std::string>& tokens);
 bool uniqueNick(User* usr);
 
 #endif // PARSING_HPP

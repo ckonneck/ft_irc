@@ -10,7 +10,13 @@ Chatroom::Chatroom(const std::string &name)
       _channelname(name),
       _channelmode(""),
       _lastTopicSetter(""),
-      members_in_room()
+      members_in_room(),
+      invite_only(false),
+      topic_only_ops(false),
+      key_set(false),
+      channel_key(""),
+      limit_set(false),
+      user_limit(0)
 {
     this->_channelname = name;
     std::cout << "Chatroom " << name << " has been created.";
@@ -134,6 +140,20 @@ void Chatroom::uninviteUser(User* u) {
     );
 }
 
+void Chatroom::setInviteOnly(bool flag) {
+    invite_only = flag;
+
+    if (flag) {
+        if (_channelmode.find('i') == std::string::npos)
+            _channelmode.push_back('i');
+    } else {
+        _channelmode.erase(
+            std::remove(_channelmode.begin(), _channelmode.end(), 'i'),
+            _channelmode.end()
+        );
+    }
+}
+
 
 void Chatroom::displayTopic()
 {
@@ -209,4 +229,59 @@ void Chatroom::broadcast(const std::string &msg, User *sender)
         }
         std::cout << "Broadcast to " << this->_channelname << ": " << msg;
     }
+}
+
+// t: only ops may set topic
+void Chatroom::setTopicOnlyOps(bool on) {
+    topic_only_ops = on;
+    if (on && _channelmode.find('t') == std::string::npos)
+        _channelmode.push_back('t');
+    else if (!on)
+        _channelmode.erase(
+            std::remove(_channelmode.begin(), _channelmode.end(), 't'),
+            _channelmode.end());
+}
+
+bool Chatroom::isTopicOnlyOps() const {
+    return topic_only_ops;
+}
+// k: channel key/password
+void Chatroom::setKey(const std::string& key) {
+    channel_key = key;
+    key_set = true;
+    if (_channelmode.find('k') == std::string::npos)
+        _channelmode.push_back('k');
+}
+void Chatroom::unsetKey() {
+    channel_key.clear();
+    key_set = false;
+    _channelmode.erase(
+        std::remove(_channelmode.begin(), _channelmode.end(), 'k'),
+        _channelmode.end());
+}
+bool Chatroom::hasKey() const { 
+    return key_set; 
+}
+const std::string& Chatroom::getKey() const {
+    return channel_key;
+}
+// l: user limit
+void Chatroom::setLimit(int limit) {
+    user_limit = limit;
+    limit_set = true;
+    if (_channelmode.find('l') == std::string::npos)
+        _channelmode.push_back('l');
+}
+void Chatroom::unsetLimit() {
+    user_limit = 0;
+    limit_set = false;
+    _channelmode.erase(
+        std::remove(_channelmode.begin(), _channelmode.end(), 'l'),
+        _channelmode.end());
+}
+bool Chatroom::hasLimit() const {
+    return limit_set;
+}
+int Chatroom::getLimit() const {
+    return user_limit;
 }
