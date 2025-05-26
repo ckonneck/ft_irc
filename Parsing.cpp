@@ -68,7 +68,7 @@ void handleMode(User* requester,
     std::map<std::string,Chatroom*>::iterator itChan
         = g_chatrooms.find(chanName);
     if (itChan == g_chatrooms.end()) {
-        requester->sendMsg(":" + servername +
+        requester->appendToSendBuffer(":" + servername +
                            " 403 " + requester->getNickname() +
                            " " + chanName +
                            " :No such channel\r\n");
@@ -76,14 +76,14 @@ void handleMode(User* requester,
     }
     Chatroom* chan = itChan->second;
     if (!chan->isMember(requester)) {
-        requester->sendMsg(":" + servername +
+        requester->appendToSendBuffer(":" + servername +
                            " 442 " + requester->getNickname() +
                            " " + chanName +
                            " :You're not on that channel\r\n");
         return;
     }
     if (!chan->isOperator(requester)) {
-        requester->sendMsg(":" + servername +
+        requester->appendToSendBuffer(":" + servername +
                            " 482 " + requester->getNickname() +
                            " " + chanName +
                            " :You're not channel operator\r\n");
@@ -112,7 +112,7 @@ void handleMode(User* requester,
         else if (m == 'k') {
             if (adding) {
                 if (tokens.size() <= argIdx) {
-                    requester->sendMsg(":" + servername +
+                    requester->appendToSendBuffer(":" + servername +
                         " 461 " + requester->getNickname() +
                         " MODE :Not enough parameters\r\n");
                 } else {
@@ -127,7 +127,7 @@ void handleMode(User* requester,
         else if (m == 'l') {
             if (adding) {
                 if (tokens.size() <= argIdx) {
-                    requester->sendMsg(":" + servername +
+                    requester->appendToSendBuffer(":" + servername +
                         " 461 " + requester->getNickname() +
                         " MODE :Not enough parameters\r\n");
                 } else {
@@ -142,7 +142,7 @@ void handleMode(User* requester,
         }
         else if (m == 'o') {
             if (tokens.size() <= argIdx) {
-                requester->sendMsg(":" + servername +
+                requester->appendToSendBuffer(":" + servername +
                     " 461 " + requester->getNickname() +
                     " MODE :Not enough parameters\r\n");
             } else {
@@ -151,7 +151,7 @@ void handleMode(User* requester,
                 ++argIdx;
                 User* globalU = findUserByNickname(nickArg);
                 if (!globalU) {
-                    requester->sendMsg(":" + servername +
+                    requester->appendToSendBuffer(":" + servername +
                         " 401 " + requester->getNickname() +
                         " " + nickArg +
                         " :No such nick/channel\r\n");
@@ -159,7 +159,7 @@ void handleMode(User* requester,
                 else {
                     User* memberU = chan->findUserByNick(nickArg);
                     if (!memberU) {
-                        requester->sendMsg(":" + servername +
+                        requester->appendToSendBuffer(":" + servername +
                             " 441 " + requester->getNickname() +
                             " " + nickArg +
                             " " + chanName +
@@ -173,7 +173,7 @@ void handleMode(User* requester,
         }
         else {
             // unknown
-            requester->sendMsg(":" + servername +
+            requester->appendToSendBuffer(":" + servername +
                 " 472 " + requester->getNickname() +
                 " " + std::string(1,m) +
                 " :is unknown mode char to me\r\n");
@@ -199,7 +199,8 @@ void handleMode(User* requester,
 void handlePing(int fd)
 {
     const std::string resp = "PONG :localhost\r\n";
-    send(fd, resp.c_str(), resp.length(), 0);
+    User *us = findUserByFD(fd);
+    us->appendToSendBuffer(resp);
 }
 
 void handleNick(User* curr, const std::string& raw)
@@ -209,7 +210,7 @@ void handleNick(User* curr, const std::string& raw)
     if (findUserByNickname(newnick) != NULL)
     {
         std::string err = ":localhost 433 * " + newnick + " :Nickname is already in use\r\n";
-        send(findUserByNickname(oldnick)->getFD(), err.c_str(), err.length(), 0);
+        curr->appendToSendBuffer(err);
         return;
     }
     curr->setNickname(newnick);
@@ -233,7 +234,7 @@ void handleKick(User* requester,
             " 403 " + requester->getNickname() +
             " " + channelName +
             " :No such channel\r\n";
-        requester->sendMsg(msg);
+        requester->appendToSendBuffer(msg);
         return;
     }
     Chatroom* chan = mit->second;
@@ -245,7 +246,7 @@ void handleKick(User* requester,
             " 442 " + requester->getNickname() +
             " " + channelName +
             " :You're not on that channel\r\n";
-        requester->sendMsg(msg);
+        requester->appendToSendBuffer(msg);
         return;
     }
 
@@ -256,7 +257,7 @@ void handleKick(User* requester,
             " 482 " + requester->getNickname() +
             " " + channelName +
             " :You're not channel operator\r\n";
-        requester->sendMsg(msg);
+        requester->appendToSendBuffer(msg);
         return;
     }
 
@@ -270,7 +271,7 @@ void handleKick(User* requester,
             " " + targetNick +
             " " + channelName +
             " :They aren't on that channel\r\n";
-        requester->sendMsg(msg);
+        requester->appendToSendBuffer(msg);
         return;
     }
 
@@ -287,7 +288,7 @@ void handleKick(User* requester,
     chan->broadcast(kickLine, NULL);
 
     // 7) Send it to the kicked user
-    victim->sendMsg(kickLine);
+    victim->appendToSendBuffer(kickLine);
     
     // 8) Finally remove them
     chan->removeUser(victim);
@@ -328,7 +329,7 @@ void handleJoin(User* curr, int fd, const std::string& chanArg)
         " 473 " + curr->getNickname() +
         " " + chanName +
         " :Cannot join channel (+i)\r\n";
-    curr->sendMsg(err);
+    curr->appendToSendBuffer(err);
     return;
 }
 
@@ -343,6 +344,7 @@ void handlePrivmsg(User* curr,
                    const std::vector<std::string>& tokens,
                    const std::string& raw)
 {
+    (void) fd;//in case we still need this and its fucked
     if (tokens.size() < 3) return;
 
     std::string target = tokens[1];
@@ -364,7 +366,9 @@ void handlePrivmsg(User* curr,
         }
         else
         {
-            send_to_client(fd, "403 " + target + " :No such channel\r\n");
+            
+            std::string msg = "403 " + target + " :No such channel\r\n";
+            curr->appendToSendBuffer(msg);
         }
     }
     else
@@ -386,7 +390,7 @@ void handleInvite(User* curr,
             " 403 " + curr->getNickname() +
             " " + channelName +
             " :No such channel\r\n";
-        curr->sendMsg(msg);
+        curr->appendToSendBuffer(msg);
         return;
     }
     Chatroom* chan = it->second;
@@ -397,7 +401,7 @@ void handleInvite(User* curr,
             " 442 " + curr->getNickname() +
             " " + channelName +
             " :You're not on that channel\r\n";
-        curr->sendMsg(msg);
+        curr->appendToSendBuffer(msg);
         return;
     }
 
@@ -407,7 +411,7 @@ void handleInvite(User* curr,
             " 482 " + curr->getNickname() +
             " " + channelName +
             " :You're not channel operator\r\n";
-        curr->sendMsg(msg);
+        curr->appendToSendBuffer(msg);
         return;
     }
 
@@ -419,7 +423,7 @@ void handleInvite(User* curr,
             " 401 " + curr->getNickname() +
             " " + targetNick +
             " :No such nick/channel\r\n";
-        curr->sendMsg(msg);
+        curr->appendToSendBuffer(msg);
         return;
     }
 
@@ -431,7 +435,7 @@ void handleInvite(User* curr,
          " 341 " + curr->getNickname() +
          " " + targetNick +
          " " + channelName + "\r\n";
-     curr->sendMsg(reply);
+     curr->appendToSendBuffer(reply);
 
     // 7) send actual INVITE message to the invitee
      std::string inviteMsg = ":" +
@@ -440,7 +444,7 @@ void handleInvite(User* curr,
          curr->getHostname() +
          " INVITE " + targetNick +
          " :" + channelName + "\r\n";
-     target->sendMsg(inviteMsg);
+     target->appendToSendBuffer(inviteMsg);
 
 }
 

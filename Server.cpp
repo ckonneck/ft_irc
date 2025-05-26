@@ -69,11 +69,17 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                 //std::cout << "Parsed line from " << fds[i].fd << ": " << msg << std::endl;
                 if (user->isRegis()== false)
                 {
-                    registrationParsing(user, msg, fds, i);
+                    registrationParsing(user, msg);
                 }
                 continue;
             }
             commandParsing(buffer, fds, i);
+                        // ⭐ Optional: If user has new data to send, set POLLOUT
+            if (user && user->hasDataToSend())
+            {
+                fds[i].events |= POLLOUT;
+                // user->set_rdyToWrite(false);
+            }
         }
         if (fds[i].revents & POLLOUT)
             {
@@ -100,17 +106,13 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                     continue;
                 }
             }
-    
-            // ⭐ Optional: If user has new data to send, set POLLOUT
-            if (user && user->hasDataToSend())
-            {
-                fds[i].events |= POLLOUT;
-            }
+
+
     }
     
 }
 
-void registrationParsing(User *user, std::string msg, std::vector<pollfd> &fds, int i)
+void registrationParsing(User *user, std::string msg)
 {
     std::cout << "WE NEW USER UP IN HERE" << std::endl;
     std::string nick = parseNick(msg);
@@ -126,7 +128,7 @@ void registrationParsing(User *user, std::string msg, std::vector<pollfd> &fds, 
     {
         user->setRegis(true);
         std::cout << "USER " << nick << " HAS BEEN ABSOLUTELY VERIFIED FOR SURE" << std::endl;
-        user->HSwelcome(fds[i].fd);
+        user->HSwelcome();
     }
 }
 
@@ -181,21 +183,25 @@ bool serverexit()
         return false;
 }
 
-void send_to_client(int client_fd, const std::string& message)
-{
-    std::string msg = message + "\r\n";
-    send(client_fd, msg.c_str(), msg.length(), 0);
-}
+// void send_to_client(int client_fd, const std::string& message)
+// {
+//     std::string msg = message + "\r\n";
+//     send(client_fd, msg.c_str(), msg.length(), 0);
+// }
 
 void join_channel(int client_fd, const std::string& nickname, const std::string& channel) {
     // Simulate JOIN message
-    send_to_client(client_fd, ":" + nickname + "!" + nickname + "@localhost JOIN :" + channel);
+    User * us = findUserByFD(client_fd);
+    std::string msg1 =  ":" + nickname + "!" + nickname + "@localhost JOIN :" + channel + "\r\n";
+    us->appendToSendBuffer(msg1);
 
     // RPL_NAMREPLY (353): list of users in channel
-    send_to_client(client_fd, ":localhost 353 " + nickname + " = " + channel + " :" + nickname);
+    std::string msg2 = ":localhost 353 " + nickname + " = " + channel + " :" + nickname + "\r\n";
+    us->appendToSendBuffer(msg2);
 
     // RPL_ENDOFNAMES (366): end of names list
-    send_to_client(client_fd, ":localhost 366 " + nickname + " " + channel + " :End of /NAMES list.");
+    std::string msg3 = ":localhost 366 " + nickname + " " + channel + " :End of /NAMES list." + "\r\n";
+    us->appendToSendBuffer(msg3);
 }
 
 

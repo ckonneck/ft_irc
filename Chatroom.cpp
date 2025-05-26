@@ -55,7 +55,7 @@ std::cout << "debug2" << std::endl;
 				//432 ERR_ERRONEUSNICKNAME "<nick> :Erroneus nickname"
 				{
 				std::string msg =" 432 ERR_ERRONEUSNICKNAME " + usr->getNickname() +" :Erroneous nickname\r\n";
-   			    usr->sendMsg(msg);
+   			    usr->appendToSendBuffer(msg);
 				   return false;
 				}
 				
@@ -69,7 +69,7 @@ std::cout << "debug3" << std::endl;
 		{
 			//433 ERR_NICKNAMEINUSE "<nick> :Nickname is already in use"
 				std::string msg =" 433 ERR_NICKNAMEINUSE " + usr->getNickname() +" :Nickname is already in use\r\n";
-   			    usr->sendMsg(msg);
+   			    usr->appendToSendBuffer(msg);
             return false;
 		}
     }
@@ -224,7 +224,7 @@ void Chatroom::broadcast(const std::string &msg, User *sender)
     {
         for (size_t i = 0; i < members_in_room.size(); ++i) {
             if (members_in_room[i] != sender) {
-                send_to_client(members_in_room[i]->getFD(), msg);
+                members_in_room[i]->appendToSendBuffer(msg);//EXPERIMENTAL
             }
         }
         std::cout << "Broadcast to " << this->_channelname << ": " << msg;

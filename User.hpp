@@ -9,7 +9,7 @@ class User
         User(const std::string &nickname, const std::string &password);
         ~User();
         static void newclient(int client_fd,std::vector<pollfd> &fds);
-        void HSwelcome(int &client_fd);
+        void HSwelcome();
         void HSNick(const std::string &oldname, const std::string &newname);
         void HSKick(const std::string &target);
         void HSInvite(const std::string &whotoinv);
@@ -34,8 +34,10 @@ class User
         const std::string& getSendBuffer() const;
         bool hasDataToSend() const;
         void consumeSendBuffer(size_t bytes);
-
+        bool get_rdyToWrite();
+        void set_rdyToWrite(bool);
     private:
+        bool _rdyToWrite;
         std::string _sendBuffer;
         std::string _buffer;
         bool _isOP;
