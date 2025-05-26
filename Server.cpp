@@ -1,6 +1,7 @@
 #include "Server.hpp"
 
 std::string servername = "server-chan";
+std::string g_serverPassword = "";
 
 void cleanupUser(User* u) {
     std::map<std::string,Chatroom*>::iterator it;
@@ -114,6 +115,30 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 
 void registrationParsing(User *user, std::string msg)
 {
+    if (msg.rfind("PASS ", 0) == 0) {
+        if (user->isRegis()) {
+            user->appendToSendBuffer(
+                ":" + servername + " 462 * :You may not re-register\r\n"
+            );
+            return;
+        }
+        std::vector<std::string> tok = split(msg, ' ');
+        if (tok.size() < 2 || tok[1] != g_serverPassword) {
+            user->appendToSendBuffer(
+                ":" + servername + " 464 * :Password incorrect\r\n"
+            );
+            removeUser(user); //raus mit dem falschpasswortler aber macht alles kaputt
+            return;
+        }
+        user->setPassValid(true);
+        return;
+    }
+    if (!user->isPassValid()) {
+        user->appendToSendBuffer(
+            ":" + servername + " 451 * :You have not registered\r\n"
+        );
+        return;
+    }
     std::cout << "WE NEW USER UP IN HERE" << std::endl;
     std::string nick = parseNick(msg);
     std::string host = parseHost(msg);

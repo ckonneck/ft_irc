@@ -4,9 +4,9 @@
 std::vector<User*> g_mappa;
 std::map<std::string, Chatroom*> g_chatrooms;
 
-User::User(const std::string &nickname,const std::string &password) : _username(""), _nickname(nickname), _password(password), _hostname("")
+User::User(const std::string &nickname,const std::string &password) 
+    : _username(""), _nickname(nickname), _password(password), _hostname(""), _passValid(false)
 {
-
     this->_isOP = false;
     std::cout << "User "<< this->_nickname <<" has been created" <<std::endl;
 }
@@ -43,6 +43,16 @@ void User::newclient(int server_fd, std::vector<pollfd> &fds)
     }
     
 
+}
+
+bool User::isPassValid() const 
+{ 
+    return _passValid; 
+} 
+
+void User::setPassValid(bool ok) 
+{ 
+    _passValid = ok; 
 }
 
 #include <unistd.h>   // for write()

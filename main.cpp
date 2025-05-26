@@ -53,6 +53,8 @@ int main(int argc, char** argv)//fix the lagg by getting rid of send to client
 
     // Validate port & set up server socket
     validatePort(argv[1]);
+    // record the password that clients must PASS
+    g_serverPassword = argv[2];
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));

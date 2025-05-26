@@ -36,6 +36,8 @@ class User
         void consumeSendBuffer(size_t bytes);
         bool get_rdyToWrite();
         void set_rdyToWrite(bool);
+        bool isPassValid() const;
+        void setPassValid(bool ok);
     private:
         bool _rdyToWrite;
         std::string _sendBuffer;
@@ -49,4 +51,5 @@ class User
 		std::string _realname;
 		int _FD;
 		std::string _auth_state;
+        bool _passValid;
 };
