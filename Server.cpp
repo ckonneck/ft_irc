@@ -123,7 +123,7 @@ void registrationParsing(User *user, std::string msg)
             return;
         }
         std::vector<std::string> tok = split(msg, ' ');
-        if (tok.size() < 2 || tok[1] != g_serverPassword) {
+        if (tok.size() < 2 || tok[1] != PasswordManager::getPassword()) {
             user->appendToSendBuffer(
                 ":" + servername + " 464 * :Password incorrect\r\n"
             );
@@ -131,6 +131,7 @@ void registrationParsing(User *user, std::string msg)
             return;
         }
         user->setPassValid(true);
+        std::cout << "User entered Correct Password UwU" << std::endl;
         return;
     }
     if (!user->isPassValid()) {
@@ -240,6 +241,16 @@ std::vector<std::string> split(const std::string &input, char delimiter) {
         result.push_back(item);
     }
     return result;
+}
+
+std::string PasswordManager::_password;
+
+void PasswordManager::setPassword(const std::string& pw) {
+    _password = pw;
+}
+
+const std::string& PasswordManager::getPassword() {
+    return _password;
 }
 // void messagehandling(std::vector<pollfd> &fds, size_t i)//obsolete
 // {

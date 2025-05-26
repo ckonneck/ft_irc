@@ -21,7 +21,14 @@ class Chatroom;
 
 extern std::map<std::string, Chatroom*> g_chatrooms;
 extern std::vector<User*> g_mappa;
-extern std::string g_serverPassword;
+
+class PasswordManager {
+public:
+    static void setPassword(const std::string& pw);
+    static const std::string& getPassword();
+private:
+    static std::string _password;
+};
 
 bool serverexit();
 void cleanup(std::vector<pollfd> &fds);
