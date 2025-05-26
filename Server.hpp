@@ -15,7 +15,7 @@
 #include <algorithm>
 #include "Chatroom.hpp"
 #include "User.hpp"
-
+#include <cerrno>
 
 class Chatroom;
 
@@ -26,7 +26,7 @@ bool serverexit();
 void cleanup(std::vector<pollfd> &fds);
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd);
 void welcomemessage();
-void messagehandling(std::vector<pollfd> &fds, size_t i);
+// void messagehandling(std::vector<pollfd> &fds, size_t i);
 void validatePort(char *argv);
 bool isDigit(char *strnum);
 void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i);
@@ -41,3 +41,4 @@ std::string parseNick(const std::string &msg);
 std::string parseUser(const std::string &msg);
 std::string parseHost(const std::string &msg);
 void join_channel(int client_fd, const std::string& nickname, const std::string& channel);
+void registrationParsing(User *user, std::string msg, std::vector<pollfd> &fds, int i);

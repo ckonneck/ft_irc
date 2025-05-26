@@ -26,7 +26,18 @@ class User
         void setRegis(bool status);
         bool isRegis();
 		void sendMsg(const std::string& msg);
+        void appendToBuffer(const std::string &data);
+        bool hasCompleteLine() const;
+        std::string extractLine();
+        std::string getBuffer() const;
+        void appendToSendBuffer(const std::string& data);
+        const std::string& getSendBuffer() const;
+        bool hasDataToSend() const;
+        void consumeSendBuffer(size_t bytes);
+
     private:
+        std::string _sendBuffer;
+        std::string _buffer;
         bool _isOP;
         bool _isRegis;
         std::string _username;

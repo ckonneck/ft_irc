@@ -121,20 +121,21 @@ std::string parseHost(const std::string &msg)
 
 void User::HSwelcome(int &client_fd)
 {
+    (void) client_fd;
     std::string nick = this->_nickname; // from client
     std::string host = this->_hostname;
     std::string username = this->_username;
     std::string msg1 = ":localhost 001 " + nick + " :Welcome to the UWURC server " + nick + "!" + username + "@" + host + "\r\n";
-    send(client_fd, msg1.c_str(), msg1.length(), 0);
+    appendToSendBuffer(msg1);
 
     std::string msg2 = ":localhost 002 " + nick + " :Your host is UWUCHAN running version 1.0\r\n";
-    send(client_fd, msg2.c_str(), msg2.length(), 0);
+    appendToSendBuffer(msg2);
 
     std::string msg3 = ":localhost 003 " + nick + " :This server was created IMA DA NYA\r\n";
-    send(client_fd, msg3.c_str(), msg3.length(), 0);
+    appendToSendBuffer(msg3);
 
     std::string msg4 = ":localhost 004 " + nick + " owo please don't be mean\r\n";
-    send(client_fd, msg4.c_str(), msg4.length(), 0);
+    appendToSendBuffer(msg4);
 }
 
 void User::HSNick(const std::string &oldname, const std::string &newname)
@@ -257,4 +258,47 @@ std::string User::getHostname()
 std::string User::getUsername()
 {
     return this->_username;
+}
+
+void User::appendToBuffer(const std::string &data)
+{
+    _buffer += data;
+}
+
+bool User::hasCompleteLine() const
+{
+    return _buffer.find("\r\n") != std::string::npos;
+}
+
+std::string User::extractLine()
+{
+    size_t pos = _buffer.find("\r\n");
+    if (pos == std::string::npos)
+        return "";
+
+    std::string line = _buffer.substr(0, pos);
+    _buffer = _buffer.substr(pos + 2); // remove the processed line
+    return line;
+}
+
+std::string User::getBuffer() const { return _buffer; }
+
+bool User::hasDataToSend() const
+{
+    return !_sendBuffer.empty();
+}
+
+const std::string& User::getSendBuffer() const
+{
+    return _sendBuffer;
+}
+
+void User::appendToSendBuffer(const std::string& data)
+{
+    _sendBuffer += data;
+}
+
+void User::consumeSendBuffer(size_t bytes)
+{
+    _sendBuffer.erase(0, bytes);
 }

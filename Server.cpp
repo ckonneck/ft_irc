@@ -17,6 +17,7 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 {
     for (size_t i = 0; i < fds.size(); i++)
     {
+        User *user = findUserByFD(fds[i].fd);
         if (fds[i].revents & POLLIN) {
 			 // Handle input from server terminal
             if (fds[i].fd == STDIN_FILENO)
@@ -26,6 +27,8 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                     running = false;
                     break;
                 }
+                else
+                    continue;
             }
             if (fds[i].fd == server_fd) {
                 
@@ -56,26 +59,74 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             buffer[n] = '\0';
             std::string msg(buffer);
             std::cout << "Received from " << fds[i].fd << ": " << msg;
-            User *user = findUserByFD(fds[i].fd);
-            if (user->isRegis()== false)
+            
+            if (!user)
+                continue;
+            user->appendToBuffer(std::string(buffer));
+            while (user->hasCompleteLine())
             {
-                std::cout << "WE NEW USER UP IN HERE" << std::endl;
-                std::string nick = parseNick(msg);
-                std::string host = parseHost(msg);
-                std::string user_str = parseUser(msg);
-                user->setNickname(nick);
-                user->setHostname(host);
-                user->setUser(user_str);
-                if(user->getNickname() != "" && user->getHostname() != "" && user->getUsername() != "")//this sometimes has hiccups
+                std::string msg = user->extractLine();
+                //std::cout << "Parsed line from " << fds[i].fd << ": " << msg << std::endl;
+                if (user->isRegis()== false)
                 {
-                    user->setRegis(true);
-                    std::cout << "USER " << nick << " HAS BEEN ABSOLUTELY VERIFIED FOR SURE" << std::endl;
-                    user->HSwelcome(fds[i].fd);
+                    registrationParsing(user, msg, fds, i);
                 }
                 continue;
             }
             commandParsing(buffer, fds, i);
         }
+        if (fds[i].revents & POLLOUT)
+            {
+                if (!user || !user->hasDataToSend()) continue;
+    
+                const std::string& msg = user->getSendBuffer();
+                ssize_t sent = send(fds[i].fd, msg.c_str(), msg.size(), 0);
+                if (sent > 0)
+                {
+                    user->consumeSendBuffer(sent);
+                    if (!user->hasDataToSend())
+                    {
+                        // No more to send — stop polling for write
+                        fds[i].events &= ~POLLOUT;
+                    }
+                }
+                else if (sent == -1 && errno != EWOULDBLOCK && errno != EAGAIN)
+                {
+                    std::cerr << "Error sending to fd " << fds[i].fd << ": " << strerror(errno) << std::endl;
+                    close(fds[i].fd);
+                    fds.erase(fds.begin() + i);
+                    if (user) cleanupUser(user);
+                    --i;
+                    continue;
+                }
+            }
+    
+            // ⭐ Optional: If user has new data to send, set POLLOUT
+            if (user && user->hasDataToSend())
+            {
+                fds[i].events |= POLLOUT;
+            }
+    }
+    
+}
+
+void registrationParsing(User *user, std::string msg, std::vector<pollfd> &fds, int i)
+{
+    std::cout << "WE NEW USER UP IN HERE" << std::endl;
+    std::string nick = parseNick(msg);
+    std::string host = parseHost(msg);
+    std::string user_str = parseUser(msg);
+    if (!nick.empty())
+        user->setNickname(nick);
+    if (!host.empty())
+        user->setHostname(host);
+    if (!user_str.empty())
+        user->setUser(user_str);
+    if(user->getNickname() != "" && user->getHostname() != "" && user->getUsername() != "")//fixed hiccups hopefully
+    {
+        user->setRegis(true);
+        std::cout << "USER " << nick << " HAS BEEN ABSOLUTELY VERIFIED FOR SURE" << std::endl;
+        user->HSwelcome(fds[i].fd);
     }
 }
 
@@ -148,30 +199,6 @@ void join_channel(int client_fd, const std::string& nickname, const std::string&
 }
 
 
-void messagehandling(std::vector<pollfd> &fds, size_t i)//obsolete
-{
-    char messagebuffer[2024];
-    int n = recv(fds[i].fd, messagebuffer, sizeof(messagebuffer) - 1, 0);
-    if (n <= 0)
-    {
-        std::cout << "Client disconnected: FD " << fds[i].fd << "\n";
-        close(fds[i].fd);
-        fds.erase(fds.begin() + i);
-        --i;
-    }
-    else
-    {
-        commandParsing(messagebuffer, fds, i);
-
-        //insert command parsing
-        messagebuffer[n] = '\0';
-        std::cout << "Client " << fds[i].fd << ": " << messagebuffer;
-    }
-}
-
-
-
-
 std::vector<std::string> split(const std::string &input, char delimiter) {
     std::vector<std::string> result;
     std::istringstream ss(input);
@@ -183,3 +210,26 @@ std::vector<std::string> split(const std::string &input, char delimiter) {
     }
     return result;
 }
+// void messagehandling(std::vector<pollfd> &fds, size_t i)//obsolete
+// {
+//     char messagebuffer[2024];
+//     int n = recv(fds[i].fd, messagebuffer, sizeof(messagebuffer) - 1, 0);
+//     if (n <= 0)
+//     {
+//         std::cout << "Client disconnected: FD " << fds[i].fd << "\n";
+//         close(fds[i].fd);
+//         fds.erase(fds.begin() + i);
+//         --i;
+//     }
+//     else
+//     {
+//         commandParsing(messagebuffer, fds, i);
+
+//         //insert command parsing
+//         messagebuffer[n] = '\0';
+//         std::cout << "Client " << fds[i].fd << ": " << messagebuffer;
+//     }
+// }
+
+
+
