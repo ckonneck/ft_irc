@@ -219,6 +219,32 @@ void Chatroom::setTopic(const std::string &topicstring, const std::string &lasts
     _hasTopic = true;
 }
 
+const char* ascii_kitties[] = {
+    " /\\_/\\  \n( o.o ) \n > ^ <  nya~!\n",
+    "  |\\---/|\n  | o_o |\n   \\_^_/  UwU\n",
+    "  /\\_/\\ \n ( •‿• ) \n / >🍓   Kitty-chan desu~!\n",
+    "  ／ﾌﾌ  ╰(=✪ x ✪=)╯\n（　ヽﾉ  \n　＼(＿) \n",
+    "  (=^-ω-^=) \n  I iz kawaii~ nyaa~! 🌸\n",
+    "  ∧,,,∧\n( ̳• · • ̳)\n/    づ♡ \nKissu~ >3< 💕\n"
+};
+
+const int kitty_count = sizeof(ascii_kitties) / sizeof(ascii_kitties[0]);
+
+std::string random_ascii_kitty()
+{
+    // Initialize the random seed only once
+    static bool seeded = false;
+    if (!seeded)
+    {
+        std::srand((unsigned int)std::time(0)); // C++98 style
+        seeded = true;
+    }
+
+    int index = std::rand() % kitty_count;
+    return std::string(ascii_kitties[index]);
+}
+
+
 void Chatroom::broadcast(const std::string &msg, User *sender)
 {
     {
@@ -228,6 +254,7 @@ void Chatroom::broadcast(const std::string &msg, User *sender)
             }
         }
         std::cout << "Broadcast to " << this->_channelname << ": " << msg;
+        std::cout << random_ascii_kitty() << std::endl; // UwU KITTYYYY~!! 🐱💕
     }
 }
 
