@@ -149,34 +149,122 @@ void User::HSwelcome()
 
 void User::HSNick(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds)
 {
-    std::string oldnick = oldname;
-    std::string newNick = newname;
-    std::string nickMsg = ":" + oldnick + "!user@localhost NICK :" + newNick + "\r\n";
-    for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin();
-        it != g_chatrooms.end(); ++it)
+
+    std::string nickMsg = ":" + oldname + "!user@localhost NICK :" + newname + "\r\n";
+    appendToSendBuffer(nickMsg);
+    for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin();it != g_chatrooms.end(); ++it)
     {
+        std::cout << "broadcasting to "<< it->second->getName() << std::endl;
         it->second->broadcast(nickMsg, this, fds);
     }
-    appendToSendBuffer(nickMsg);
+    std::cout << "applying sendbuffer to "<< this->getNickname() <<" of " << nickMsg << std::endl;
+
+    // int my_fd = this->getFD();
+    // for (size_t i = 0; i < fds.size(); ++i)
+    // {
+    //     if (fds[i].fd == my_fd)
+    //     {
+    //         fds[i].events |= POLLOUT;
+    //         break;
+    //     }
+    // }
 }
+
+
+void User::HSNickdb(const std::string &oldname,
+                  const std::string &newname,
+                  std::vector<pollfd> &fds)
+{
+    std::string nickMsg = ":" + oldname
+                        + "!user@localhost NICK :" 
+                        + newname 
+                        + "\r\n";
+
+    std::cout << "[DEBUG] HSNick called for user fd=" 
+              << this->getFD()
+              << ", oldnick=" << oldname 
+              << ", newnick=" << newname 
+              << "\n";
+
+    // Broadcast into each room the user is actually in
+    for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin();
+         it != g_chatrooms.end();
+         ++it)
+    {
+        Chatroom* room = it->second;
+
+        // Only broadcast if this user is a member
+        const std::vector<User*>& members = room->getMembers();
+        bool in_room = false;
+        for (size_t i = 0; i < members.size(); ++i)
+        {
+            if (members[i] == this)
+            {
+                in_room = true;
+                break;
+            }
+        }
+        if (in_room)
+        {
+            std::cout << "[DEBUG] Broadcasting nick change to room "
+                      << it->first << "\n";
+            room->broadcastdb(nickMsg, this, fds);
+        }
+        else
+        {
+            std::cout << "[DEBUG] Skipping room " << it->first 
+                      << ": user not present\n";
+        }
+    }
+
+    // Also send directly to self
+    std::cout << "[DEBUG] Queuing nick change for self (fd=" 
+              << this->getFD() << ")\n";
+    appendToSendBuffer(nickMsg);
+
+    // And set POLLOUT for self
+    int my_fd = this->getFD();
+    bool found = false;
+    for (size_t i = 0; i < fds.size(); ++i)
+    {
+        if (fds[i].fd == my_fd)
+        {
+            std::cout << "[DEBUG] Setting POLLOUT on self pollfd[" 
+                      << i << "], before=" 
+                      << std::hex << fds[i].events << std::dec << "\n";
+            fds[i].events |= POLLOUT;
+            std::cout << "[DEBUG]             after=" 
+                      << std::hex << fds[i].events << std::dec << "\n";
+            found = true;
+            break;
+        }
+    }
+    if (!found)
+    {
+        std::cout << "[WARN] Could not find pollfd entry for self fd " 
+                  << my_fd << "\n";
+    }
+}
+
+
 
 User* findUserByFD(int fd)
 {
-    std::cout << "Starting search for user with FD: " << fd << std::endl;
+    // std::cout << "Starting search for user with FD: " << fd << std::endl;
     for (size_t i = 0; i < g_mappa.size(); ++i)
     {
         User* user = g_mappa[i];
 
         // Debug print of nickname and FD being checked
-        std::cout << "Checking user: " << user->getNickname()
-                  << " (FD: " << user->getFD() << ")" << std::endl;
+        // std::cout << "Checking user: " << user->getNickname()
+        //           << " (FD: " << user->getFD() << ")" << std::endl;
 
         if (user->getFD() == fd) {
-            std::cout << "Match found: " << user->getNickname() << std::endl;
+            // std::cout << "Match found: " << user->getNickname() << std::endl;
             return user;
         }
     }
-    std::cout << "No user found for FD: " << fd << std::endl;
+    // std::cout << "No user found for FD: " << fd << std::endl;
     return NULL;
 }
 
@@ -311,6 +399,7 @@ void User::appendToSendBuffer(const std::string& data)
 
 void User::consumeSendBuffer(size_t bytes)
 {
+    std::cout << "erasing sendbuffer for " << this->_FD << std::endl;
     _sendBuffer.erase(0, bytes);
 }
 

@@ -55,8 +55,8 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
                                  handleTopic(curr, raw);
     else if (cmd == "MODE" && tokens.size() > 2)
        handleMode(curr, tokens[1], tokens[2], tokens, fds);
-    // else if (cmd == "QUIT")
-    //                              handleQuit(fd);            //whoaaaaaaaaaaaaaaawe doing double deletion with this oneeeeee.. check serverloooooop
+    else if (cmd == "QUIT")
+        handleQuit(fd);            //whoaaaaaaaaaaaaaaawe doing double deletion with this oneeeeee.. check serverloooooop
 }
 
 
@@ -213,8 +213,8 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
         curr->appendToSendBuffer(err);
         return;
     }
-    curr->setNickname(newnick);
     curr->HSNick(oldnick, newnick, fds);
+    curr->setNickname(newnick);
 }
 
 

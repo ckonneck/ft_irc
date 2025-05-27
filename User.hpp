@@ -11,6 +11,8 @@ class User
         static void newclient(int client_fd,std::vector<pollfd> &fds);
         void HSwelcome();
         void HSNick(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds);
+                void HSNickdb(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds);
+
         void HSKick(const std::string &target);
         void HSInvite(const std::string &whotoinv);
         void HSTopicQuery(Chatroom &chatroom);

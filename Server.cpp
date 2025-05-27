@@ -86,15 +86,19 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
         }
         if (fds[i].revents & POLLOUT)
             {
+                std::cout << "[DEBUG] POLLOUT ready for fd=" << fds[i].fd << "\n";
                 if (!user || !user->hasDataToSend()) continue;
-    
+                std::cout << "[DEBUG] POLLOUT after the !user->hasdatatosend() check" << fds[i].fd << "\n";
                 const std::string& msg = user->getSendBuffer();
                 ssize_t sent = send(fds[i].fd, msg.c_str(), msg.size(), 0);
+                std::cout << "[DEBUG] send(fd="<<fds[i].fd<<", bytes="<<msg.size()
+                    <<") returned "<<sent<<"\n";
                 if (sent > 0)
                 {
                     user->consumeSendBuffer(sent);
                     if (!user->hasDataToSend())
                     {
+                        std::cout << "no more data to send " << user->getFD() << std::endl;
                         // No more to send — stop polling for write
                         fds[i].events &= ~POLLOUT;
                     }
