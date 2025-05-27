@@ -9,7 +9,7 @@ class Chatroom
         Chatroom(const std::string &name);
         void setTopic(const std::string &topicstring, const std::string &lastsetter);
         void displayTopic();
-		void broadcast(const std::string &msg, User *sender);
+		void broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds);
         std::string getName();
         std::string getTopic();
         std::string getLastTopicSetter();
@@ -37,7 +37,6 @@ class Chatroom
         void unsetKey();
         bool hasKey() const;
         const std::string& getKey() const;
-
     private:
         time_t _topicTime;
         bool _hasTopic;

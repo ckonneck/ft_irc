@@ -10,11 +10,11 @@ class User
         ~User();
         static void newclient(int client_fd,std::vector<pollfd> &fds);
         void HSwelcome();
-        void HSNick(const std::string &oldname, const std::string &newname);
+        void HSNick(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds);
         void HSKick(const std::string &target);
         void HSInvite(const std::string &whotoinv);
         void HSTopicQuery(Chatroom &chatroom);
-        void HSSetTopic(const std::string &topicstring, Chatroom &chatroom);
+        void HSSetTopic(const std::string &topicstring, Chatroom &chatroom, std::vector<pollfd> &fds);
         void Mode(char &modeChar);
         int getFD();
         std::string getNickname();

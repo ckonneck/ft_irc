@@ -34,13 +34,14 @@ void handleCommand(const ParsedCommand& cmd, User& client);
 void commandParsing(char* messageBuffer, std::vector<pollfd>& fds, size_t index);
 
 void handlePing(int fd);
-void handleNick(User* curr, const std::string& raw);
+void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds);
 void handleKick(User* requester,
                 const std::string& channelName,
                 const std::string& targetNick,
-                const std::string& reason);
-void handleJoin(User* curr, int fd, const std::string& chanArg);
-void handlePrivmsg(User* curr, int fd, const std::vector<std::string>& tokens, const std::string& raw);
+                const std::string& reason,
+                std::vector<pollfd> &fds);
+void handleJoin(User* curr, int fd, const std::string& chanArg, std::vector<pollfd> &fds);
+void handlePrivmsg(User* curr, int fd, const std::vector<std::string>& tokens, const std::string& raw, std::vector<pollfd> &fds);
 void handleInvite(User* curr,
                   const std::string& targetNick,
                   const std::string& channelName);
@@ -49,7 +50,7 @@ void handleQuit(int fd);
 void handleMode(User* requester,
                 const std::string& chanName,
                 const std::string& flags,
-                const std::vector<std::string>& tokens);
+                const std::vector<std::string>& tokens, std::vector<pollfd> &fds);
 bool uniqueNick(User* usr);
 
 #endif // PARSING_HPP

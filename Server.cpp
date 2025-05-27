@@ -18,8 +18,10 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 {
     for (size_t i = 0; i < fds.size(); i++)
     {
+        // std::cout << i << "sanity" << std::endl;
         User *user = findUserByFD(fds[i].fd);
-        if (fds[i].revents & POLLIN) {
+        if (fds[i].revents & POLLIN) 
+        {
 			 // Handle input from server terminal
             if (fds[i].fd == STDIN_FILENO)
             {
@@ -76,11 +78,11 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             }
             commandParsing(buffer, fds, i);
                         // ⭐ Optional: If user has new data to send, set POLLOUT
-            if (user && user->hasDataToSend())
-            {
-                fds[i].events |= POLLOUT;
-                // user->set_rdyToWrite(false);
-            }
+                    }
+        if (user && user->hasDataToSend())
+        {
+            fds[i].events |= POLLOUT;
+            // user->set_rdyToWrite(false);
         }
         if (fds[i].revents & POLLOUT)
             {
@@ -115,31 +117,31 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 
 void registrationParsing(User *user, std::string msg)
 {
-    if (msg.rfind("PASS ", 0) == 0) {
-        if (user->isRegis()) {
-            user->appendToSendBuffer(
-                ":" + servername + " 462 * :You may not re-register\r\n"
-            );
-            return;
-        }
-        std::vector<std::string> tok = split(msg, ' ');
-        if (tok.size() < 2 || tok[1] != PasswordManager::getPassword()) {
-            user->appendToSendBuffer(
-                ":" + servername + " 464 * :Password incorrect\r\n"
-            );
-            removeUser(user); //raus mit dem falschpasswortler aber macht alles kaputt
-            return;
-        }
-        user->setPassValid(true);
-        std::cout << "User entered Correct Password UwU" << std::endl;
-        return;
-    }
-    if (!user->isPassValid()) {
-        user->appendToSendBuffer(
-            ":" + servername + " 451 * :You have not registered\r\n"
-        );
-        return;
-    }
+    // if (msg.rfind("PASS ", 0) == 0) {
+    //     if (user->isRegis()) {
+    //         user->appendToSendBuffer(
+    //             ":" + servername + " 462 * :You may not re-register\r\n"
+    //         );
+    //         return;
+    //     }
+    //     std::vector<std::string> tok = split(msg, ' ');
+    //     if (tok.size() < 2 || tok[1] != PasswordManager::getPassword()) {
+    //         user->appendToSendBuffer(
+    //             ":" + servername + " 464 * :Password incorrect\r\n"
+    //         );
+    //         removeUser(user); //raus mit dem falschpasswortler aber macht alles kaputt
+    //         return;
+    //     }
+    //     user->setPassValid(true);
+    //     std::cout << "User entered Correct Password UwU" << std::endl;
+    //     return;
+    // }
+    // if (!user->isPassValid()) {
+    //     user->appendToSendBuffer(
+    //         ":" + servername + " 451 * :You have not registered\r\n"
+    //     );
+    //     return;
+    // }
     std::cout << "WE NEW USER UP IN HERE" << std::endl;
     std::string nick = parseNick(msg);
     std::string host = parseHost(msg);

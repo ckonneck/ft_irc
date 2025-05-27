@@ -245,18 +245,49 @@ std::string random_ascii_kitty()
 }
 
 
-void Chatroom::broadcast(const std::string &msg, User *sender)
+// void Chatroom::broadcast(const std::string &msg, User *sender)old
+// {
+//     for (size_t i = 0; i < members_in_room.size(); ++i)
+//     {std::cout << members_in_room[i]->getNickname() << std::endl;
+//     }
+//         for (size_t i = 0; i < members_in_room.size(); ++i) {
+//             if (members_in_room[i] != sender) {
+//                 members_in_room[i]->appendToSendBuffer(msg);//EXPERIMENTAL
+//             }
+//         }
+//         std::cout << "Broadcast to " << this->_channelname << ": " << msg;
+//         std::cout << random_ascii_kitty() << std::endl; // UwU KITTYYYY~!! 🐱💕
+// }
+
+
+void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds)
 {
-    {
-        for (size_t i = 0; i < members_in_room.size(); ++i) {
-            if (members_in_room[i] != sender) {
-                members_in_room[i]->appendToSendBuffer(msg);//EXPERIMENTAL
+    for (size_t i = 0; i < members_in_room.size(); ++i)
+    {std::cout << members_in_room[i]->getNickname() << std::endl;}
+
+
+         for (size_t i = 0; i < members_in_room.size(); ++i) {
+            User* member = members_in_room[i];
+
+            if (member != sender)
+            {
+                member->appendToSendBuffer(msg);
+                int user_fd = members_in_room[i]->getFD();
+                for (size_t j = 0; j < fds.size(); ++j)
+                {
+                    if (fds[j].fd == user_fd)
+                    {
+                        fds[j].events |= POLLOUT;
+                        break;
+                    }
+                }
+                
             }
         }
         std::cout << "Broadcast to " << this->_channelname << ": " << msg;
         std::cout << random_ascii_kitty() << std::endl; // UwU KITTYYYY~!! 🐱💕
-    }
 }
+
 
 // t: only ops may set topic
 void Chatroom::setTopicOnlyOps(bool on) {

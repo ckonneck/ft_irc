@@ -147,7 +147,7 @@ void User::HSwelcome()
     appendToSendBuffer(msg4);
 }
 
-void User::HSNick(const std::string &oldname, const std::string &newname)
+void User::HSNick(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds)
 {
     std::string oldnick = oldname;
     std::string newNick = newname;
@@ -155,7 +155,7 @@ void User::HSNick(const std::string &oldname, const std::string &newname)
     for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin();
         it != g_chatrooms.end(); ++it)
     {
-        it->second->broadcast(nickMsg, this);
+        it->second->broadcast(nickMsg, this, fds);
     }
     appendToSendBuffer(nickMsg);
 }
@@ -238,12 +238,12 @@ void User::HSTopicQuery(Chatroom &chatroom)//this is for when client
     }
 }
 
-void User::HSSetTopic(const std::string &topicstring, Chatroom &chatroom)
+void User::HSSetTopic(const std::string &topicstring, Chatroom &chatroom, std::vector<pollfd> &fds)
 {
     //if user has rights
     chatroom.setTopic(topicstring, chatroom.getLastTopicSetter());
     std::string topicChangeMsg = ":" + this->_nickname + "!user@localhost TOPIC " + chatroom.getName() + " :" + topicstring + "\r\n";
-    chatroom.broadcast(topicChangeMsg, this);
+    chatroom.broadcast(topicChangeMsg, this, fds);
 }
 
 void User::setNickname(const std::string &nick)

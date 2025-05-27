@@ -30,7 +30,7 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     if      (cmd == "PING")
         handlePing(fd);
     else if (cmd == "NICK" && tokens.size() > 1)
-                                 handleNick(curr, raw);
+                                 handleNick(curr, raw, fds);
   else if (cmd == "KICK" && tokens.size() > 2)
 {
     std::string channelName = tokens[1];
@@ -42,19 +42,19 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     if (pos != std::string::npos)
         reason = raw.substr(pos + 2);
 
-    handleKick(curr, channelName, targetNick, reason);
+    handleKick(curr, channelName, targetNick, reason, fds);
 }
 
     else if (cmd == "JOIN" && tokens.size() > 1)
-                                 handleJoin(curr, fd, tokens[1]);
+                                 handleJoin(curr, fd, tokens[1], fds);
     else if (cmd == "PRIVMSG")
-                                 handlePrivmsg(curr, fd, tokens, raw);
+                                 handlePrivmsg(curr, fd, tokens, raw, fds);
        else if (cmd == "INVITE" && tokens.size() > 2)
         handleInvite(curr, tokens[1], tokens[2]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
                                  handleTopic(curr, raw);
     else if (cmd == "MODE" && tokens.size() > 2)
-       handleMode(curr, tokens[1], tokens[2], tokens);
+       handleMode(curr, tokens[1], tokens[2], tokens, fds);
     // else if (cmd == "QUIT")
     //                              handleQuit(fd);            //whoaaaaaaaaaaaaaaawe doing double deletion with this oneeeeee.. check serverloooooop
 }
@@ -63,7 +63,7 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
 void handleMode(User* requester,
                 const std::string& chanName,
                 const std::string& flags,
-                const std::vector<std::string>& tokens)
+                const std::vector<std::string>& tokens, std::vector<pollfd> &fds)
 {
     std::map<std::string,Chatroom*>::iterator itChan
         = g_chatrooms.find(chanName);
@@ -194,7 +194,7 @@ void handleMode(User* requester,
         oss << " " << *it;
     }
     oss << "\r\n";
-    chan->broadcast(oss.str(), NULL);
+    chan->broadcast(oss.str(), NULL, fds);
 }
 void handlePing(int fd)
 {
@@ -203,7 +203,7 @@ void handlePing(int fd)
     us->appendToSendBuffer(resp);
 }
 
-void handleNick(User* curr, const std::string& raw)
+void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
 {
     std::string oldnick = curr->getNickname();
     std::string newnick = parseNick(raw);
@@ -214,7 +214,7 @@ void handleNick(User* curr, const std::string& raw)
         return;
     }
     curr->setNickname(newnick);
-    curr->HSNick(oldnick, newnick);
+    curr->HSNick(oldnick, newnick, fds);
 }
 
 
@@ -222,7 +222,7 @@ void handleNick(User* curr, const std::string& raw)
 void handleKick(User* requester,
                 const std::string& channelName,
                 const std::string& targetNick,
-                const std::string& reason)
+                const std::string& reason, std::vector<pollfd> &fds)
 {
     // 1) find channel in the global map
     std::map<std::string,Chatroom*>::iterator mit
@@ -285,7 +285,7 @@ void handleKick(User* requester,
         " :" + textReason + "\r\n";
 
     // 6) Broadcast to everyone in the channel
-    chan->broadcast(kickLine, NULL);
+    chan->broadcast(kickLine, NULL, fds);
 
     // 7) Send it to the kicked user
     victim->appendToSendBuffer(kickLine);
@@ -297,7 +297,7 @@ void handleKick(User* requester,
 
 
 
-void handleJoin(User* curr, int fd, const std::string& chanArg)
+void handleJoin(User* curr, int fd, const std::string& chanArg, std::vector<pollfd> &fds)
 {
 	if (uniqueNick(curr) == false)
 		
@@ -335,14 +335,14 @@ void handleJoin(User* curr, int fd, const std::string& chanArg)
 
     chan->addUser(curr);
     std::string msg = ":" + curr->getNickname() + " JOIN :" + chanName + "\r\n";
-    chan->broadcast(msg, NULL);
+    chan->broadcast(msg, NULL, fds);
     join_channel(fd, curr->getNickname(), chanName);
 }
 
 void handlePrivmsg(User* curr,
                    int fd,
                    const std::vector<std::string>& tokens,
-                   const std::string& raw)
+                   const std::string& raw, std::vector<pollfd> &fds)
 {
     (void) fd;//in case we still need this and its fucked
     if (tokens.size() < 3) return;
@@ -362,7 +362,7 @@ void handlePrivmsg(User* curr,
             std::string full = ":" + curr->getNickname()
                              + " PRIVMSG " + target
                              + " :" + text + "\r\n";
-            chan->broadcast(full, curr);
+            chan->broadcast(full, curr, fds);
         }
         else
         {
