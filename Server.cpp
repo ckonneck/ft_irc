@@ -79,6 +79,7 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             commandParsing(buffer, fds, i);
                         // ⭐ Optional: If user has new data to send, set POLLOUT
                     }
+        User *us = findUserByFD(fds[i].fd);
         if (user && user->hasDataToSend())
         {
             fds[i].events |= POLLOUT;
@@ -86,19 +87,16 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
         }
         if (fds[i].revents & POLLOUT)
             {
-                std::cout << "[DEBUG] POLLOUT ready for fd=" << fds[i].fd << "\n";
-                if (!user || !user->hasDataToSend()) continue;
-                std::cout << "[DEBUG] POLLOUT after the !user->hasdatatosend() check" << fds[i].fd << "\n";
-                const std::string& msg = user->getSendBuffer();
+                if (!us || !us->hasDataToSend()) continue;
+                const std::string& msg = us->getSendBuffer();
+                debugPrintPolloutSendBuffers(fds, g_mappa);
                 ssize_t sent = send(fds[i].fd, msg.c_str(), msg.size(), 0);
-                std::cout << "[DEBUG] send(fd="<<fds[i].fd<<", bytes="<<msg.size()
-                    <<") returned "<<sent<<"\n";
                 if (sent > 0)
                 {
-                    user->consumeSendBuffer(sent);
-                    if (!user->hasDataToSend())
+                    us->consumeSendBuffer(sent);
+                    if (!us->hasDataToSend())
                     {
-                        std::cout << "no more data to send " << user->getFD() << std::endl;
+                        std::cout << "no more data to send " << us->getFD() << std::endl;
                         // No more to send — stop polling for write
                         fds[i].events &= ~POLLOUT;
                     }
@@ -108,7 +106,7 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                     std::cerr << "Error sending to fd " << fds[i].fd << ": " << strerror(errno) << std::endl;
                     close(fds[i].fd);
                     fds.erase(fds.begin() + i);
-                    if (user) cleanupUser(user);
+                    if (us) cleanupUser(us);
                     --i;
                     continue;
                 }

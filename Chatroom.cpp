@@ -262,6 +262,10 @@ std::string random_ascii_kitty()
 
 void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds)
 {
+    // std::cout << "[DEBUG-broadcast] &fds=" << &fds
+    //           << ", first_fd=" << (fds.empty() ? -1 : fds[0].fd)
+    //           << ", size=" << fds.size() << "\n";
+
     for (size_t i = 0; i < members_in_room.size(); ++i)
     {std::cout << members_in_room[i]->getNickname() << std::endl;}
 

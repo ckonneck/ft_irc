@@ -14,7 +14,6 @@
 #include <sstream>  
 
 
-extern std::map<std::string,Chatroom*> g_chatrooms;
 extern std::string servername;
 
 void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
@@ -213,8 +212,8 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
         curr->appendToSendBuffer(err);
         return;
     }
-    curr->HSNick(oldnick, newnick, fds);
     curr->setNickname(newnick);
+    curr->HSNick(oldnick, newnick, fds);
 }
 
 
@@ -334,9 +333,29 @@ void handleJoin(User* curr, int fd, const std::string& chanArg, std::vector<poll
 }
 
     chan->addUser(curr);
-    std::string msg = ":" + curr->getNickname() + " JOIN :" + chanName + "\r\n";
-    chan->broadcast(msg, NULL, fds);
-    join_channel(fd, curr->getNickname(), chanName);
+   
+    std::string joinMsg = ":" + curr->getNickname() + " JOIN :" + chanName + "\r\n";
+    chan->broadcast(joinMsg, NULL, fds);
+    curr->appendToSendBuffer(joinMsg);
+    const std::vector<User*>& members = chan->getMembers();
+    std::string nameList;
+    for (size_t i = 0; i < members.size(); ++i)
+    {
+        if (!nameList.empty())
+            nameList += " ";
+        // Prefix with @ if the user is an operator (optional)
+        if (chan->isOperator(members[i]))
+            nameList += "@";
+        nameList += members[i]->getNickname();
+    }
+
+    std::string rpl_353 = ":" + servername + " 353 " + curr->getNickname() + " = " + chanName + " :" + nameList + "\r\n";
+    std::string rpl_366 = ":" + servername + " 366 " + curr->getNickname() + " " + chanName + " :End of /NAMES list\r\n";
+
+    curr->appendToSendBuffer(rpl_353);
+    curr->appendToSendBuffer(rpl_366);
+    (void) fd;
+    // join_channel(fd, curr->getNickname(), chanName); OBSOETE;REPLACE WITH CALL UPSTAIRS
 }
 
 void handlePrivmsg(User* curr,

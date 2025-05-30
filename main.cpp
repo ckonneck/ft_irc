@@ -74,7 +74,9 @@ int main(int argc, char** argv)//fix the lagg by getting rid of send to client
     pollfd server_pollfd = { server_fd,    POLLIN, 0 };
     fds.push_back(stdin_pollfd);
     fds.push_back(server_pollfd);
-
+    // std::cout << "[DEBUG-main] &fds=" << &fds
+    //           << ", first_fd=" << (fds.empty() ? -1 : fds[0].fd)
+    //           << ", size=" << fds.size() << "\n";
     bool running = true;
     welcomemessage();
 
@@ -92,4 +94,43 @@ int main(int argc, char** argv)//fix the lagg by getting rid of send to client
     cleanupChatrooms();
 
     return 0;
+}
+
+
+
+
+void debugPrintPolloutSendBuffers(const std::vector<pollfd>& fds, const std::vector<User*>& users) {
+    std::cout << "[DEBUG] --- POLLOUT Send Buffers ---" << std::endl;
+    for (size_t i = 0; i < fds.size(); ++i) {
+        if (!(fds[i].revents & POLLOUT))
+            continue;
+
+        int fd = fds[i].fd;
+        User* user = NULL;
+
+        // Find user matching this fd
+        for (size_t j = 0; j < users.size(); ++j) {
+            if (users[j] && users[j]->getFD() == fd) {
+                user = users[j];
+                break;
+            }
+        }
+
+        if (!user) {
+            std::cout << "FD: " << fd << " → [No matching user found]" << std::endl;
+            continue;
+        }
+
+        const std::string& buffer = user->getSendBuffer();
+        std::cout << "FD: " << fd
+                  << ", Nick: " << user->getNickname()
+                  << ", SendBuffer Size: " << buffer.size()
+                  << ", Data: \"" << buffer.substr(0, 80) << "\"";
+
+        if (buffer.size() > 80)
+            std::cout << " [...]";
+
+        std::cout << std::endl;
+    }
+    std::cout << "[DEBUG] --- End POLLOUT Send Buffers ---" << std::endl;
 }

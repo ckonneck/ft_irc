@@ -147,17 +147,28 @@ void User::HSwelcome()
     appendToSendBuffer(msg4);
 }
 
+void printChatrooms() {
+    std::map<std::string, Chatroom*>::iterator it;
+    for (it = g_chatrooms.begin(); it != g_chatrooms.end(); ++it) {
+        std::cout << "Chatroom name: " << it->first << ", pointer: " << it->second << std::endl;
+    }
+}
+
 void User::HSNick(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds)
 {
-
+// std::cout << "[DEBUG-HSnick] &fds=" << &fds
+//               << ", first_fd=" << (fds.empty() ? -1 : fds[0].fd)
+//               << ", size=" << fds.size() << "\n";
     std::string nickMsg = ":" + oldname + "!user@localhost NICK :" + newname + "\r\n";
     appendToSendBuffer(nickMsg);
-    for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin();it != g_chatrooms.end(); ++it)
-    {
-        std::cout << "broadcasting to "<< it->second->getName() << std::endl;
+    printChatrooms();
+    for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin();it != g_chatrooms.end(); it++)
+    {//find how to get chatroom
+    //user get members in chatrooms
+    //chatroom members
+        std::cout << "broadcasting to HSNICK"<< it->second->getName() << std::endl;
         it->second->broadcast(nickMsg, this, fds);
     }
-    std::cout << "applying sendbuffer to "<< this->getNickname() <<" of " << nickMsg << std::endl;
 
     // int my_fd = this->getFD();
     // for (size_t i = 0; i < fds.size(); ++i)

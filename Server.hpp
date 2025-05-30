@@ -50,3 +50,4 @@ std::string parseUser(const std::string &msg);
 std::string parseHost(const std::string &msg);
 void join_channel(int client_fd, const std::string& nickname, const std::string& channel);
 void registrationParsing(User *user, std::string msg);
+void debugPrintPolloutSendBuffers(const std::vector<pollfd>& fds, const std::vector<User*>& users);

@@ -52,5 +52,4 @@ void handleMode(User* requester,
                 const std::string& flags,
                 const std::vector<std::string>& tokens, std::vector<pollfd> &fds);
 bool uniqueNick(User* usr);
-
 #endif // PARSING_HPP
