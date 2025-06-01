@@ -51,5 +51,6 @@ void handleMode(User* requester,
                 const std::string& chanName,
                 const std::string& flags,
                 const std::vector<std::string>& tokens, std::vector<pollfd> &fds);
+void handleCap(User* curr, std::vector<std::string> tokens);
 bool uniqueNick(User* usr);
 #endif // PARSING_HPP
