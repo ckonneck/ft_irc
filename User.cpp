@@ -55,12 +55,12 @@ void User::setPassValid(bool ok)
     _passValid = ok; 
 }
 
-#include <unistd.h>   // for write()
-void User::sendMsg(const std::string& msg)
-{
-    int fd = _FD;
-    write(fd, msg.c_str(), msg.size());
-}
+// for write() obsolete
+// void User::sendMsg(const std::string& msg)
+// {
+//     int fd = _FD;
+//     write(fd, msg.c_str(), msg.size());
+// }
 
 std::string parseNick(const std::string &msg)
 {
@@ -131,19 +131,16 @@ std::string parseHost(const std::string &msg)
 
 void User::HSwelcome()
 {
-    std::string nick = this->_nickname; // from client
-    std::string host = this->_hostname;
-    std::string username = this->_username;
-    std::string msg1 = ":localhost 001 " + nick + " :Welcome to the UWURC server " + nick + "!" + username + "@" + host + "\r\n";
+    std::string msg1 = ":localhost 001 " + this->_nickname + " :Welcome to the UWURC server " + this->_nickname + "!" + this->_username + "@" + this->_hostname + "\r\n";
     appendToSendBuffer(msg1);
 
-    std::string msg2 = ":localhost 002 " + nick + " :Your host is UWUCHAN running version 1.0\r\n";
+    std::string msg2 = ":localhost 002 " + this->_nickname + " :Your host is UWUCHAN running version 1.0\r\n";
     appendToSendBuffer(msg2);
 
-    std::string msg3 = ":localhost 003 " + nick + " :This server was created IMA DA NYA\r\n";
+    std::string msg3 = ":localhost 003 " + this->_nickname + " :This server was created IMA DA NYA\r\n";
     appendToSendBuffer(msg3);
 
-    std::string msg4 = ":localhost 004 " + nick + " owo please don't be mean\r\n";
+    std::string msg4 = ":localhost 004 " + this->_nickname + " owo please don't be mean\r\n";
     appendToSendBuffer(msg4);
 }
 
@@ -371,7 +368,6 @@ std::string User::getUsername()
 void User::appendToBuffer(const std::string &data)
 {
     this->_buffer += data;
-    // this->_rdyToWrite = true;
 }
 
 bool User::hasCompleteLine() const
@@ -405,21 +401,56 @@ const std::string& User::getSendBuffer() const
 void User::appendToSendBuffer(const std::string& data)
 {
     _sendBuffer += data;
-    // this->set_rdyToWrite(true);
 }
 
 void User::consumeSendBuffer(size_t bytes)
 {
-    std::cout << "erasing sendbuffer for " << this->_FD << std::endl;
+    // std::cout << "erasing sendbuffer for " << this->_FD << std::endl;
     _sendBuffer.erase(0, bytes);
 }
 
-// bool User::get_rdyToWrite()
-// {
-//     return this->_rdyToWrite;
-// }
+bool User::isRegis()
+{
+    return (this->_isRegis);
+}
 
-// void User::set_rdyToWrite(bool status)
-// {
-//     this->_rdyToWrite = status;
-// }
+void User::setRegis(bool status)
+{
+    this->_isRegis = status;
+}
+
+void removeUser(User* target) {
+ 
+    for (std::map<std::string, Chatroom*>::iterator mit = g_chatrooms.begin();
+         mit != g_chatrooms.end(); ++mit)
+    {
+        Chatroom* chan = mit->second;
+        if (chan->isMember(target))
+            chan->removeUser(target);
+        if (chan->isOperator(target))
+            chan->removeOperator(target);
+        chan->uninviteUser(target);
+    }
+
+    std::vector<User*>::iterator uit
+        = std::find(g_mappa.begin(), g_mappa.end(), target);
+    if (uit != g_mappa.end()) {
+        delete *uit;
+        g_mappa.erase(uit);
+    }
+}
+
+void join_channel(int client_fd, const std::string& nickname, const std::string& channel) {
+    // Simulate JOIN message
+    User * us = findUserByFD(client_fd);
+    std::string msg1 =  ":" + nickname + "!" + nickname + "@localhost JOIN :" + channel + "\r\n";
+    us->appendToSendBuffer(msg1);
+
+    // RPL_NAMREPLY (353): list of users in channel
+    std::string msg2 = ":localhost 353 " + nickname + " = " + channel + " :" + nickname + "\r\n";
+    us->appendToSendBuffer(msg2);
+
+    // RPL_ENDOFNAMES (366): end of names list
+    std::string msg3 = ":localhost 366 " + nickname + " " + channel + " :End of /NAMES list." + "\r\n";
+    us->appendToSendBuffer(msg3);
+}

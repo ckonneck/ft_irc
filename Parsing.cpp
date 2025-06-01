@@ -85,8 +85,8 @@ void handleMode(User* requester,
                 const std::vector<std::string>& tokens, std::vector<pollfd> &fds)
 {
     std::cerr << "[DEBUG] flags received: '" << flags << "'\n";
-for (size_t i = 0; i < flags.size(); ++i)
-    std::cerr << "[DEBUG] char[" << i << "]: '" << flags[i] << "' (" << int(flags[i]) << ")\n";
+    for (size_t i = 0; i < flags.size(); ++i)
+        std::cerr << "[DEBUG] char[" << i << "]: '" << flags[i] << "' (" << int(flags[i]) << ")\n";
     std::map<std::string,Chatroom*>::iterator itChan
         = g_chatrooms.find(chanName);
     if (itChan == g_chatrooms.end()) {

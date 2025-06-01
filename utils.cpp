@@ -47,3 +47,15 @@ std::string sanitize(const std::string& str) {
     size_t end = str.find_last_not_of("\r\n");
     return (end == std::string::npos) ? "" : str.substr(0, end + 1);
 }
+
+std::vector<std::string> split(const std::string &input, char delimiter) {
+    std::vector<std::string> result;
+    std::istringstream ss(input);
+    std::string item;
+
+    while (std::getline(ss, item, delimiter))
+    {
+        result.push_back(item);
+    }
+    return result;
+}
