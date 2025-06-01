@@ -1,0 +1,8 @@
+invitehandling doesn't work.
+vllt temporary nickname
+no such channel bei welcome u8: No such channel
+serverpasswort implementen
+implement topic//just parsing really. funktionen stehen schon
+
+
+

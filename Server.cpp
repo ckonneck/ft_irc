@@ -13,7 +13,6 @@ void cleanupUser(User* u) {
     removeUser(u);
 }
 
-
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 {
     for (size_t i = 0; i < fds.size(); i++)
@@ -95,6 +94,7 @@ int polling(User *user, std::vector<pollfd> &fds, size_t &i)
 void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
 {
     user->appendToBuffer(std::string(buffer));
+    std::cout << buffer << std::endl;
     while (user->hasCompleteLine())
     {
         std::string msg = user->extractLine();
