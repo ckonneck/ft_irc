@@ -85,29 +85,33 @@ bool isSpaceOrNewline(char c) {
         const std::vector<std::string>& tokens,
         std::vector<pollfd> &fds)
 {
-std::map<std::string, Chatroom*>::iterator itChan = g_chatrooms.find(chanName);
-if (itChan == g_chatrooms.end()) {
-requester->appendToSendBuffer(":" + servername +
-                   " 403 " + requester->getNickname() +
-                   " " + chanName +
-                   " :No such channel\r\n");
-return;
-}
-Chatroom* chan = itChan->second;
-if (!chan->isMember(requester)) {
-requester->appendToSendBuffer(":" + servername +
-                   " 442 " + requester->getNickname() +
-                   " " + chanName +
-                   " :You're not on that channel\r\n");
-return;
-}
-if (!chan->isOperator(requester)) {
-requester->appendToSendBuffer(":" + servername +
-                   " 482 " + requester->getNickname() +
-                   " " + chanName +
-                   " :You're not channel operator\r\n");
-return;
-}
+    std::cerr << "[DEBUG] flags received: '" << flags << "'\n";
+for (size_t i = 0; i < flags.size(); ++i)
+    std::cerr << "[DEBUG] char[" << i << "]: '" << flags[i] << "' (" << int(flags[i]) << ")\n";
+    std::map<std::string,Chatroom*>::iterator itChan
+        = g_chatrooms.find(chanName);
+    if (itChan == g_chatrooms.end()) {
+        requester->appendToSendBuffer(":" + servername +
+                           " 403 " + requester->getNickname() +
+                           " " + chanName +
+                           " :No such channel\r\n");
+        return;
+    }
+    Chatroom* chan = itChan->second;
+    if (!chan->isMember(requester)) {
+        requester->appendToSendBuffer(":" + servername +
+                           " 442 " + requester->getNickname() +
+                           " " + chanName +
+                           " :You're not on that channel\r\n");
+        return;
+    }
+    if (!chan->isOperator(requester)) {
+        requester->appendToSendBuffer(":" + servername +
+                           " 482 " + requester->getNickname() +
+                           " " + chanName +
+                           " :You're not channel operator\r\n");
+        return;
+    }
 
 bool adding = true;
 size_t argIdx = 3;
