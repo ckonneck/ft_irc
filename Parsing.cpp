@@ -56,9 +56,25 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
        handleMode(curr, tokens[1], tokens[2], tokens, fds);
     else if (cmd == "QUIT")
         handleQuit(fd);            //whoaaaaaaaaaaaaaaawe doing double deletion with this oneeeeee.. check serverloooooop
-}
+    else if (cmd == "CAP")
+        handleCap(fd, curr, tokens);
+    }
 
-
+    void handleCap(int fd, User* curr, std::vector<std::string> tokens)
+    {
+        if (tokens.size() < 2)
+            return;
+    
+        const std::string &subcmd = tokens[1];
+    
+        if (subcmd == "LS") {
+            // Send a list of supported capabilities
+            std::string caps = "multi-prefix";
+            std::string msg = ":" + servername + " CAP * LS :" + caps + "\r\n";
+            curr->appendToSendBuffer(msg);
+        }
+    }
+    
 void handleMode(User* requester,
                 const std::string& chanName,
                 const std::string& flags,
