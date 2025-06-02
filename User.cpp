@@ -339,7 +339,7 @@ void User::HSSetTopic(std::vector<std::string> tokens, Chatroom &chatroom, std::
 {
     std::string topicstring = extractAfterHashBlock(tokens);
     topicstring.erase(0,1);
-    if (chatroom.isOperator(this))
+    if (chatroom.isOperator(this)) // set MODE Flag
     {
         chatroom.setTopic(topicstring, this->_nickname);
         std::string topicChangeMsg = ":" + this->_nickname + "!" + this->_username + "@" + this->_hostname +

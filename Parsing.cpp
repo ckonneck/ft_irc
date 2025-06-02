@@ -461,11 +461,20 @@ void handleInvite(User* curr,
                   const std::string& rawTargetNick,
                   const std::string& rawChannelName)
 {
-    // Step A: Sanitize the channel name exactly as in handleJoin()
+    // 1) First sanitize whatever the user typed:
     std::string channelName = sanitize(rawChannelName);
+
+    // 2) If sanitize() gave us an empty string or something not starting with '#',
+    //    prepend '#' and sanitize again (to trim whitespace, etc.).
     if (channelName.empty() || channelName[0] != '#')
     {
-        // 403 ERR_NOSUCHCHANNEL (invalid or non-existent channel format)
+        channelName = "#" + channelName;
+        channelName = sanitize(channelName);
+    }
+
+    // 3) If sanitize still failed, reject with ERR_NOSUCHCHANNEL
+    if (channelName.empty() || channelName[0] != '#')
+    {
         std::string err = ":" + servername
                         + " 403 " + curr->getNickname()
                         + " " + rawChannelName
@@ -474,7 +483,7 @@ void handleInvite(User* curr,
         return;
     }
 
-    // Step 1: Check if the channel actually exists in g_chatrooms
+    // 4) Now look up the channel in g_chatrooms
     std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(channelName);
     if (it == g_chatrooms.end())
     {
@@ -487,7 +496,7 @@ void handleInvite(User* curr,
     }
     Chatroom* chan = it->second;
 
-    // Step 2: Ensure the inviter is already a member of that channel
+    // 5) Ensure the inviter is on that channel
     if (! chan->isMember(curr))
     {
         std::string msg = ":" + servername
@@ -498,7 +507,7 @@ void handleInvite(User* curr,
         return;
     }
 
-    // Step 3: If the channel is +i (invite-only), only an operator may invite
+    // 6) If +i is set, only an operator may invite
     if (chan->isInviteOnly())
     {
         if (! chan->isOperator(curr))
@@ -511,9 +520,9 @@ void handleInvite(User* curr,
             return;
         }
     }
-    // Otherwise (if +i is off), any member is allowed to do INVITE
+    // Otherwise (invite-only off), any member may INVITE
 
-    // Step 4: Check that the target nickname corresponds to a connected user
+    // 7) Check that targetNick exists
     std::string targetNick = rawTargetNick;
     User* target = findUserByNickname(targetNick);
     if (target == NULL)
@@ -526,7 +535,7 @@ void handleInvite(User* curr,
         return;
     }
 
-    // Step 5: If the target is already a member of that channel, error 443
+    // 8) If they’re already on that channel, send ERR_USERONCHANNEL
     if (chan->isMember(target))
     {
         std::string msg = ":" + servername
@@ -538,13 +547,12 @@ void handleInvite(User* curr,
         return;
     }
 
-    // (Optional) If channel has a key (+k) and inviter did not supply it, reject:
-    //   // if (chan->hasKey()) { ... 477 ERR_BADCHANNELKEY ... return; }
+    // 9) (Optional: check +k here if you need to enforce a key)
 
-    // Step 6: Record the invitation in the Chatroom’s invited_to_room list
+    // 10) Record the invitation so they can JOIN even if +i is set
     chan->inviteUser(target);
 
-    // Step 7: Send RPL_INVITING (numeric 341) back to the inviter
+    // 11) Send RPL_INVITING (341) back to the inviter
     {
         std::string reply = ":" + servername
                           + " 341 " + curr->getNickname()
@@ -553,9 +561,8 @@ void handleInvite(User* curr,
         curr->appendToSendBuffer(reply);
     }
 
-    // Step 8: Send the actual INVITE line to the invite-e’s send buffer
+    // 12) Send the actual INVITE line to the invitee’s buffer
     {
-        // Format per RFC: ":<nick>!<user>@<host> INVITE <targetNick> :<#channel>\r\n"
         std::string inviteMsg;
         inviteMsg.reserve(
             curr->getNickname().length() +
@@ -579,6 +586,7 @@ void handleInvite(User* curr,
         target->appendToSendBuffer(inviteMsg);
     }
 }
+
 
 void handleTopic(User* curr, const std::string& raw, std::vector<std::string> tokens, std::vector<pollfd> &fds)
 {
