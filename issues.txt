@@ -2,7 +2,7 @@ invitehandling doesn't work.
 vllt temporary nickname
 no such channel bei welcome u8: No such channel
 serverpasswort implementen
-implement topic//just parsing really. funktionen stehen schon
-
+!!!!!topic is done.
+nickchange sends to all chatrooms right now, not only the ones the dude is in
 
 

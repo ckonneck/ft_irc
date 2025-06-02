@@ -51,11 +51,11 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
        else if (cmd == "INVITE" && tokens.size() > 2)
         handleInvite(curr, tokens[1], tokens[2]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
-                                 handleTopic(curr, raw);
+        handleTopic(curr, raw, tokens, fds);
     else if (cmd == "MODE" && tokens.size() > 2)
        handleMode(curr, tokens[1], tokens[2], tokens, fds);
-    else if (cmd == "QUIT")
-        handleQuit(fd);            //whoaaaaaaaaaaaaaaawe doing double deletion with this oneeeeee.. check serverloooooop
+    // else if (cmd == "QUIT")
+    //     handleQuit(fd);            //whoaaaaaaaaaaaaaaawe doing double deletion with this one. getting invalid read, works fine without it. 2.jun.11.01
     else if (cmd == "CAP")
         handleCap(curr, tokens);
     }
@@ -381,7 +381,7 @@ void handleJoin(User* curr, int fd, const std::string& chanArg, std::vector<poll
     {
         chan = it->second;
     }
-  if (chan->isInviteOnly() && !chan->isInvited(curr)) {
+    if (chan->isInviteOnly() && !chan->isInvited(curr)) {
     // 473 = ERR_INVITEONLYCHAN
     std::string err = ":" + servername +
         " 473 " + curr->getNickname() +
@@ -389,7 +389,7 @@ void handleJoin(User* curr, int fd, const std::string& chanArg, std::vector<poll
         " :Cannot join channel (+i)\r\n";
     curr->appendToSendBuffer(err);
     return;
-}
+    }
 
     chan->addUser(curr);
    
@@ -413,8 +413,9 @@ void handleJoin(User* curr, int fd, const std::string& chanArg, std::vector<poll
 
     curr->appendToSendBuffer(rpl_353);
     curr->appendToSendBuffer(rpl_366);
+    curr->HSTopicQuery(*chan);
     (void) fd;
-    // join_channel(fd, curr->getNickname(), chanName); OBSOETE;REPLACE WITH CALL UPSTAIRS
+    // join_channel(fd, curr->getNickname(), chanName); OBSOLETE;REPLACE WITH CALL UPSTAIRS
 }
 
 void handlePrivmsg(User* curr,
@@ -526,12 +527,25 @@ void handleInvite(User* curr,
 
 }
 
-void handleTopic(User* curr, const std::string& raw)
+void handleTopic(User* curr, const std::string& raw, std::vector<std::string> tokens, std::vector<pollfd> &fds)
 {
     // suppress unused warning for curr
-    (void)curr;
-
-    std::cout << "TOPIC command raw line: " << raw << std::endl;
+    Chatroom* chan = NULL;
+    std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(tokens[1]);
+    if (it != g_chatrooms.end())
+    {
+        chan = it->second;   
+    }
+    //tokens 2 = topictoset
+    // tokens 1 = channelname
+    if (tokens[2] != "")
+    {
+        curr->HSSetTopic(tokens ,*chan, fds);
+        return;
+    }
+    curr->HSTopicQuery(*chan);
+    
+    std::cout << "DEBUGTOPIC command raw line: " << raw << std::endl;
     // TODO: parse and apply topic
 }
 

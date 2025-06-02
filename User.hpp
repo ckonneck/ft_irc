@@ -16,7 +16,7 @@ class User
         void HSKick(const std::string &target);
         void HSInvite(const std::string &whotoinv);
         void HSTopicQuery(Chatroom &chatroom);
-        void HSSetTopic(const std::string &topicstring, Chatroom &chatroom, std::vector<pollfd> &fds);
+        void HSSetTopic(std::vector<std::string> tokens, Chatroom &chatroom, std::vector<pollfd> &fds);
         void Mode(char &modeChar);
         int getFD();
         std::string getNickname();

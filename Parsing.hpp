@@ -45,7 +45,7 @@ void handlePrivmsg(User* curr, int fd, const std::vector<std::string>& tokens, c
 void handleInvite(User* curr,
                   const std::string& targetNick,
                   const std::string& channelName);
-void handleTopic(User* curr, const std::string& raw);
+void handleTopic(User* curr, const std::string& raw, std::vector<std::string> tokens, std::vector<pollfd> &fds);
 void handleQuit(int fd);
 void handleMode(User* requester,
                 const std::string& chanName,

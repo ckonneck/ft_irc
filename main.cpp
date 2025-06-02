@@ -43,7 +43,7 @@ void cleanupChatrooms()
     g_chatrooms.clear();
 }
 
-int main(int argc, char** argv)//fix the lagg by getting rid of send to client
+int main(int argc, char** argv)
 {
     if (argc != 3) {
         std::cout << "invalid number of arguments.\n"

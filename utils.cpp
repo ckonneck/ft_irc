@@ -59,3 +59,65 @@ std::vector<std::string> split(const std::string &input, char delimiter) {
     }
     return result;
 }
+
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <cctype>
+
+void printStringHex(const std::string& input)
+{
+    for (std::string::size_type i = 0; i < input.size(); ++i) {
+        char c = input[i];
+        std::cout << "[";
+        switch (c) {
+            case '\n': std::cout << "\\n"; break;
+            case '\r': std::cout << "\\r"; break;
+            case '\t': std::cout << "\\t"; break;
+            case '\v': std::cout << "\\v"; break;
+            case '\f': std::cout << "\\f"; break;
+            case '\a': std::cout << "\\a"; break;
+            case '\b': std::cout << "\\b"; break;
+            case '\\': std::cout << "\\\\"; break;
+            default:
+                if (c >= 32 && c <= 126) {
+                    std::cout << c;
+                } else {
+                    // Non-printable, show as hex escape
+                    std::cout << "\\x";
+                    static const char* hex = "0123456789ABCDEF";
+                    unsigned char uc = static_cast<unsigned char>(c);
+                    std::cout << hex[(uc >> 4) & 0xF] << hex[uc & 0xF];
+                }
+        }
+        std::cout << "]" << std::endl;
+    }
+}
+
+std::string extractAfterHashBlock(const std::vector<std::string>& words) {
+    std::string result;
+    bool foundHash = false;
+    bool skippingHash = false;
+
+    for (std::vector<std::string>::size_type i = 0; i < words.size(); ++i) {
+        const std::string& word = words[i];
+
+        if (!foundHash) {
+            if (!word.empty() && word[0] == '#') {
+                foundHash = true;
+                skippingHash = true;
+            }
+        } else if (skippingHash) {
+            if (!word.empty() && word[0] == '#') {
+                continue; // still skipping
+            } else {
+                skippingHash = false;
+                result += word;
+            }
+        } else {
+            result += " " + word;
+        }
+    }
+
+    return result;
+}

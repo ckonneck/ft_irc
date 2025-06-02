@@ -155,10 +155,6 @@ void Chatroom::setInviteOnly(bool flag) {
 }
 
 
-void Chatroom::displayTopic()
-{
-    std::cout << _topic << std::endl;
-}
 
 void Chatroom::addUser(User* user) {
     members_in_room.push_back(user);

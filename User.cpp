@@ -318,6 +318,7 @@ void User::HSTopicQuery(Chatroom &chatroom)//this is for when client
 {
     if (chatroom.hasTopic() == true) {
         std::string topic = chatroom.getTopic();
+        printStringHex(topic);
         std::string setter = chatroom.getLastTopicSetter();
         std::ostringstream oss;
         oss << chatroom.getTopicTime();
@@ -334,12 +335,20 @@ void User::HSTopicQuery(Chatroom &chatroom)//this is for when client
     }
 }
 
-void User::HSSetTopic(const std::string &topicstring, Chatroom &chatroom, std::vector<pollfd> &fds)
+void User::HSSetTopic(std::vector<std::string> tokens, Chatroom &chatroom, std::vector<pollfd> &fds)
 {
-    //if user has rights
-    chatroom.setTopic(topicstring, chatroom.getLastTopicSetter());
-    std::string topicChangeMsg = ":" + this->_nickname + "!user@localhost TOPIC " + chatroom.getName() + " :" + topicstring + "\r\n";
-    chatroom.broadcast(topicChangeMsg, this, fds);
+    std::string topicstring = extractAfterHashBlock(tokens);
+    topicstring.erase(0,1);
+    if (chatroom.isOperator(this))
+    {
+        chatroom.setTopic(topicstring, this->_nickname);
+        std::string topicChangeMsg = ":" + this->_nickname + "!" + this->_username + "@" + this->_hostname +
+                             " TOPIC " + chatroom.getName() + " :" + topicstring + "\r\n";
+
+        chatroom.broadcast(topicChangeMsg, NULL, fds);
+    }
+    else
+        appendToSendBuffer("You don't have the rights to set the topic.\n");
 }
 
 void User::setNickname(const std::string &nick)
@@ -453,4 +462,14 @@ void join_channel(int client_fd, const std::string& nickname, const std::string&
     // RPL_ENDOFNAMES (366): end of names list
     std::string msg3 = ":localhost 366 " + nickname + " " + channel + " :End of /NAMES list." + "\r\n";
     us->appendToSendBuffer(msg3);
+}
+
+int User::getFD()
+{
+    return this->_FD;
+}
+
+std::string User::getNickname()
+{
+    return this->_nickname;
 }
