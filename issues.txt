@@ -1,8 +1,14 @@
-invitehandling doesn't work.
 vllt temporary nickname
 no such channel bei welcome u8: No such channel
 serverpasswort implementen
-!!!!!topic is done.
++topic, wenn topicmode off is, kann jeder topic setzen, muss noch implementiert werden.
 nickchange sends to all chatrooms right now, not only the ones the dude is in
+Mode +o doesn't work yetttt even though serverchan says it works
+entweder operator, oder first user, hat doppelten nickchange message displayed
+so error messages vllt direkt solomessage in den chatroom nur an den der die errormessage kriegen//CHRISMACHT
 
+semidone:
+
+invite, but needs further testing
+topic, but needs optimization
 
