@@ -15,7 +15,7 @@ class User
 
         void HSKick(const std::string &target);
         void HSInvite(const std::string &whotoinv);
-        void HSTopicQuery(Chatroom &chatroom);
+        void HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds);
         void HSSetTopic(std::vector<std::string> tokens, Chatroom &chatroom, std::vector<pollfd> &fds);
         void Mode(char &modeChar);
         int getFD();
@@ -40,6 +40,12 @@ class User
         void set_rdyToWrite(bool);
         bool isPassValid() const;
         void setPassValid(bool ok);
+        Chatroom* getChatroom(const std::string& name);
+        void addNewMemberToChatroom(Chatroom* room);
+        void removeChatroom(const std::string& name);
+        std::map<std::string, Chatroom*>& getChatrooms();
+        void leaveAllChatrooms();
+
     private:
         bool _rdyToWrite;
         std::string _sendBuffer;
@@ -51,6 +57,7 @@ class User
         std::string _password;
 		std::string _hostname;
 		std::string _realname;
+        std::map<std::string, Chatroom*> roomsThisUserIsMemberIn;
 		int _FD;
 		std::string _auth_state;
         bool _passValid;

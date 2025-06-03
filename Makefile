@@ -1,16 +1,16 @@
 NAME = ircserv
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++98 -g
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -g
 SRCS =  main.cpp utils.cpp User.cpp Server.cpp Chatroom.cpp Parsing.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
+	$(CC) $(CXXFLAGS) $(OBJS) -o $(NAME)
 	
 %.o: %.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJS)

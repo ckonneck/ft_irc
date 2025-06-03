@@ -55,7 +55,7 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     else if (cmd == "MODE" && tokens.size() > 2)
        handleMode(curr, tokens[1], tokens[2], tokens, fds);
     // else if (cmd == "QUIT")
-    //     handleQuit(fd);            //whoaaaaaaaaaaaaaaawe doing double deletion with this one. getting invalid read, works fine without it. 2.jun.11.01
+    //     handleQuit(fd);  still doing double deletion with this one. getting invalid read, works fine without it. 3.jun.12.01
     else if (cmd == "CAP")
         handleCap(curr, tokens);
     }
@@ -67,7 +67,8 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
     
         const std::string &subcmd = tokens[1];
     
-        if (subcmd == "LS") {
+        if (subcmd == "LS")
+        {
             // Send a list of supported capabilities
             std::string caps = "multi-prefix";
             std::string msg = ":" + servername + " CAP * LS :" + caps + "\r\n";
@@ -203,7 +204,7 @@ else if (m == 'o') {
             requester->appendToSendBuffer(":" + servername +
                 " 401 " + requester->getNickname() +
                 " " + nickArg +
-                " :No such nick/channel\r\n");
+                " :No such nick/channel\r\n");//I GET THIS DISPLAYED WHEN TRYING TO MODE +o SOMEONE.
         } else {
             User* memberU = chan->findUserByNick(nickArg);
             if (!memberU) {
@@ -347,7 +348,7 @@ void handleKick(User* requester,
 
     // 7) Send it to the kicked user
     victim->appendToSendBuffer(kickLine);
-    
+    victim->removeChatroom(channelName);
     // 8) Finally remove them
     chan->removeUser(victim);
 }
@@ -410,10 +411,10 @@ void handleJoin(User* curr, int fd, const std::string& chanArg, std::vector<poll
 
     std::string rpl_353 = ":" + servername + " 353 " + curr->getNickname() + " = " + chanName + " :" + nameList + "\r\n";
     std::string rpl_366 = ":" + servername + " 366 " + curr->getNickname() + " " + chanName + " :End of /NAMES list\r\n";
-
+    curr->addNewMemberToChatroom(chan);
     curr->appendToSendBuffer(rpl_353);
     curr->appendToSendBuffer(rpl_366);
-    curr->HSTopicQuery(*chan);
+    curr->HSTopicQuery(*chan, fds);
     (void) fd;
     // join_channel(fd, curr->getNickname(), chanName); OBSOLETE;REPLACE WITH CALL UPSTAIRS
 }
@@ -604,7 +605,7 @@ void handleTopic(User* curr, const std::string& raw, std::vector<std::string> to
         curr->HSSetTopic(tokens ,*chan, fds);
         return;
     }
-    curr->HSTopicQuery(*chan);
+    curr->HSTopicQuery(*chan, fds);
     
     std::cout << "DEBUGTOPIC command raw line: " << raw << std::endl;
 }

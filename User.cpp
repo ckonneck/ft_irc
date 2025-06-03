@@ -137,12 +137,22 @@ void User::HSwelcome()
     std::string msg2 = ":localhost 002 " + this->_nickname + " :Your host is UWUCHAN running version 1.0\r\n";
     appendToSendBuffer(msg2);
 
-    std::string msg3 = ":localhost 003 " + this->_nickname + " :This server was created IMA DA NYA\r\n";
+    std::string msg3 = ":localhost 003 " + this->_nickname + " :This server was created at " + serverStartTime() + " DA NYA\r\n";
     appendToSendBuffer(msg3);
 
     std::string msg4 = ":localhost 004 " + this->_nickname + " owo please don't be mean\r\n";
     appendToSendBuffer(msg4);
 }
+
+std::string serverStartTime()
+{   
+    time_t now = std::time(NULL);
+    struct tm *t = std::localtime(&now);
+    char buf[80];
+    std::strftime(buf, sizeof(buf), "%a %b %e %H:%M:%S %Y", t);
+    return std::string(buf);
+}
+
 
 void printChatrooms() {
     std::map<std::string, Chatroom*>::iterator it;
@@ -157,25 +167,25 @@ void User::HSNick(const std::string &oldname, const std::string &newname, std::v
 //               << ", first_fd=" << (fds.empty() ? -1 : fds[0].fd)
 //               << ", size=" << fds.size() << "\n";
     std::string nickMsg = ":" + oldname + "!user@localhost NICK :" + newname + "\r\n";
-    appendToSendBuffer(nickMsg);
-    printChatrooms();
-    for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin();it != g_chatrooms.end(); it++)
-    {//find how to get chatroom
-    //user get members in chatrooms
-    //chatroom members
-        std::cout << "broadcasting to HSNICK"<< it->second->getName() << std::endl;
-        it->second->broadcast(nickMsg, this, fds);
-    }
+    appendToSendBuffer(nickMsg);//maybe this needs to go, maybe not
+    // printChatrooms();
+    std::set<int> alreadyNotifiedFDs;
+    std::map<std::string, Chatroom*>::iterator it;
+for (it = roomsThisUserIsMemberIn.begin(); it != roomsThisUserIsMemberIn.end(); ++it)
+{
+    std::string channelName = it->first;
+    Chatroom* room = it->second;
 
-    // int my_fd = this->getFD();
-    // for (size_t i = 0; i < fds.size(); ++i)
-    // {
-    //     if (fds[i].fd == my_fd)
-    //     {
-    //         fds[i].events |= POLLOUT;
-    //         break;
-    //     }
-    // }
+    if (room)
+    {
+        std::cout << "User is in: " << channelName << std::endl;
+        std::cout << "broadcasting to HSNICK"<< channelName << std::endl;
+        it->second->broadcastonce(nickMsg, this, fds, alreadyNotifiedFDs);
+    }
+    //user get members in chatrooms
+    //chatroom members 
+    //WHEN THIS IS FIXED, THE OTHER ERROR OF DOUBLE AND TRIPLE NICKNAME WILL ALSO GO
+    }
 }
 
 
@@ -313,7 +323,7 @@ void User::HSInvite(const std::string &whotoinv)
     targetuser->appendToSendBuffer(msg2);
 }
 
-void User::HSTopicQuery(Chatroom &chatroom)//this is for when client
+void User::HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds)//this is for when client
 //sends: /Topic #channelname
 {
     if (chatroom.hasTopic() == true) {
@@ -330,7 +340,11 @@ void User::HSTopicQuery(Chatroom &chatroom)//this is for when client
         std::string msg333 = ":localhost 333 " + this->_nickname + " " + chatroom.getName() + " " + setter + " " + timestamp + "\r\n";
         appendToSendBuffer(msg333);
     } else {
+
+        
         std::string msg = ":localhost 331 " + this->_nickname + " " + chatroom.getName() + " :No topic is set\r\n";
+        (void)fds;
+        // chatroom.broadcastToYou(msg, this, fds);
         appendToSendBuffer(msg);
     }
 }
@@ -430,6 +444,7 @@ void User::setRegis(bool status)
 
 void removeUser(User* target) {
  
+    if (!target) return; 
     for (std::map<std::string, Chatroom*>::iterator mit = g_chatrooms.begin();
          mit != g_chatrooms.end(); ++mit)
     {
@@ -443,7 +458,8 @@ void removeUser(User* target) {
 
     std::vector<User*>::iterator uit
         = std::find(g_mappa.begin(), g_mappa.end(), target);
-    if (uit != g_mappa.end()) {
+        if (uit != g_mappa.end())
+        {
         delete *uit;
         g_mappa.erase(uit);
     }
@@ -472,4 +488,48 @@ int User::getFD()
 std::string User::getNickname()
 {
     return this->_nickname;
+}
+
+void User::addNewMemberToChatroom(Chatroom* room)
+{
+    if (room)
+        roomsThisUserIsMemberIn[room->getName()] = room;
+}
+
+Chatroom* User::getChatroom(const std::string& name)
+{
+    std::map<std::string, Chatroom*>::iterator it = roomsThisUserIsMemberIn.find(name);
+    if (it != roomsThisUserIsMemberIn.end())
+        return it->second;
+    return NULL;
+}
+
+void User::removeChatroom(const std::string& name)
+{
+    std::map<std::string, Chatroom*>::iterator it = roomsThisUserIsMemberIn.find(name);
+    if (it != roomsThisUserIsMemberIn.end())
+        roomsThisUserIsMemberIn.erase(it);
+}
+
+std::map<std::string, Chatroom*>& User::getChatrooms()
+{
+    return roomsThisUserIsMemberIn;
+}
+
+
+void Chatroom::removeUserFromChatroom(User* user)
+{
+if (!user)
+        return;
+
+    for (std::vector<User*>::iterator it = members_in_room.begin(); it != members_in_room.end(); ++it)
+    {
+        if (*it == user)
+        {
+            members_in_room.erase(it);
+            break;
+        }
+    }
+
+    user->removeChatroom(this->getName());
 }

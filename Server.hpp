@@ -16,7 +16,7 @@
 #include "Chatroom.hpp"
 #include "User.hpp"
 #include <cerrno>
-
+#include <set>
 class Chatroom;
 
 extern std::map<std::string, Chatroom*> g_chatrooms;
@@ -56,3 +56,4 @@ void registrationParsing(User *user, std::string msg);
 void debugPrintPolloutSendBuffers(const std::vector<pollfd>& fds, const std::vector<User*>& users);
 void printStringHex(const std::string& str);
 std::string extractAfterHashBlock(const std::vector<std::string>& words);
+std::string serverStartTime();

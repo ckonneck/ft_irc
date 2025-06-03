@@ -1,6 +1,6 @@
 #pragma once
 #include "Server.hpp"
-
+#include <set>
 class User;
 
 class Chatroom
@@ -11,6 +11,7 @@ class Chatroom
         void displayTopic();
 		void broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds);
         void broadcastdb(const std::string &msg, User *sender, std::vector<pollfd> &fds);
+        void broadcastToYou(const std::string &msg, User *sender, std::vector<pollfd> &fds);
 
         std::string getName();
         std::string getTopic();
@@ -40,6 +41,8 @@ class Chatroom
         bool hasKey() const;
         const std::string& getKey() const;
         const std::vector<User*>& getMembers() const;
+        void removeUserFromChatroom(User *user);
+        void broadcastonce(const std::string &msg, User *sender, std::vector<pollfd> &fds, std::set<int>& alreadyNotifiedFDs);
 
     private:
         time_t _topicTime;

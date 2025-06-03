@@ -8,6 +8,7 @@ void cleanupUser(User* u) {
     for (it = g_chatrooms.begin(); it != g_chatrooms.end(); ++it) {
         Chatroom* chan = it->second;
         chan->removeUser(u);
+        //maybe check if user is operator first? or switch order?
         chan->removeOperator(u);
     }
     removeUser(u);
@@ -117,7 +118,9 @@ void disconnect(std::vector<pollfd> &fds, size_t &i)
     // remove this fd from the poll list
     fds.erase(fds.begin() + i);
     User* old = findUserByFD(disc_fd);
-    if (old) {
+    if (old)
+    {
+        old->leaveAllChatrooms();
         cleanupUser(old);
         std::cout << "Cleaned up User* for FD " << disc_fd << std::endl;
     }else {

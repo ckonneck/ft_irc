@@ -176,6 +176,7 @@ void Chatroom::inviteUser(User* u) {
 
 void Chatroom::removeUser(User* user)
 {
+    
     std::vector<User*>::iterator it = std::find(members_in_room.begin(), members_in_room.end(), user);
     if (it != members_in_room.end())
     {
@@ -254,7 +255,10 @@ std::string random_ascii_kitty()
 //         std::cout << "Broadcast to " << this->_channelname << ": " << msg;
 //         std::cout << random_ascii_kitty() << std::endl; // UwU KITTYYYY~!! 🐱💕
 // }
+// void Chatroom::broadcastToYou(const std::string &msg, User *sender, std::vector<pollfd> &fds)
+// {
 
+// }
 
 void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds)
 {
@@ -289,6 +293,39 @@ void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollf
     {std::cout << members_in_room[i]->getNickname() <<"   "<< members_in_room[i]->getSendBuffer() << std::endl;}
 }
 
+
+void Chatroom::broadcastonce(const std::string &msg, User *sender, std::vector<pollfd> &fds, std::set<int>& alreadyNotifiedFDs)
+{
+    //just debug message, dont forget to comment out for eval
+    for (size_t i = 0; i < members_in_room.size(); ++i)
+    {std::cout << members_in_room[i]->getNickname() << std::endl;}
+
+
+         for (size_t i = 0; i < members_in_room.size(); ++i)
+         {
+            User* member = members_in_room[i];
+            int user_fd = members_in_room[i]->getFD();
+            if (member != sender && alreadyNotifiedFDs.find(user_fd) == alreadyNotifiedFDs.end())
+            {
+                member->appendToSendBuffer(msg);
+                alreadyNotifiedFDs.insert(user_fd);
+                
+                for (size_t j = 0; j < fds.size(); ++j)
+                {
+                    if (fds[j].fd == user_fd)
+                    {
+                        fds[j].events |= POLLOUT;
+                        break;
+                    }
+                }
+            }
+        }
+        std::cout << "Broadcast to " << this->_channelname << ": " << msg;
+        std::cout << random_ascii_kitty() << std::endl; // UwU KITTYYYY~!! 🐱💕
+            //just debug message, dont forget to comment out for eval
+        for (size_t i = 0; i < members_in_room.size(); ++i)
+    {std::cout << members_in_room[i]->getNickname() <<"   "<< members_in_room[i]->getSendBuffer() << std::endl;}
+}
 // Chatroom::broadcast with debug logging
 void Chatroom::broadcastdb(const std::string &msg,
                          User *sender,
@@ -417,3 +454,18 @@ const std::vector<User*>& Chatroom::getMembers() const
 {
     return members_in_room;
 }
+
+void User::leaveAllChatrooms()
+{
+    std::map<std::string, Chatroom*> copy = roomsThisUserIsMemberIn;
+
+    for (std::map<std::string, Chatroom*>::iterator it = copy.begin(); it != copy.end(); ++it)
+    {
+        Chatroom* room = it->second;
+        if (room)
+            room->removeUserFromChatroom(this);
+    }
+
+    roomsThisUserIsMemberIn.clear();
+}
+
