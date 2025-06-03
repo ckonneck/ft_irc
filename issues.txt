@@ -1,25 +1,27 @@
+TO DO:
+
 vllt temporary nickname
 no such channel bei welcome u8: No such channel
 serverpasswort implementen
-
-
-Mode +o doesn't work yetttt even though serverchan says it works
-:No such nick/channel;//I GET THIS DISPLAYED WHEN TRYING TO MODE +o SOMEONE.
-+topic, wenn topicmode off is, kann jeder topic setzen, muss noch implementiert werden.
+Irssi: critical nicklist_set_host: assertion 'host != NULL' failed
+Irssi: critical g_ascii_strcasecmp: assertion 's1 != NULL' failed?????
+PRIVATE MESSAGING
 
 add PART support(parsing)(jan)
+add PONG;
+MODE ALL MODES (l und k zb);
 
+
+
+TO DO EMIL(Management)
+alles testen, alles machen, file support, chatgpt anbindung, bot, banlist, filter, 
+webcam 
 
 semidone:
 
 invite, but needs further testing
-topic, but needs optimization
+topic, but needs -t flag implementiert dass jeder topic setzen kann wenn er will.
 
-
-
-so error messages vllt direkt solomessage in den chatroom nur an den der die errormessage kriegen
-// nicht unbedingt moeglich/noetig, andere ircserver machen das genauso, bestimmte sachen nur
-// im "clientwindow" zu displayen und nich im chatwindow.
 
 
 wenn kein operator im raum ist, sollte der naechste in line operator kriegen 
@@ -29,3 +31,5 @@ wenn kein operator im raum ist, sollte der naechste in line operator kriegen
 DONE;
 
 FIXED!  nickchange sends to all chatrooms right now, not only the ones the dude is in
+FIXED!   Mode +o doesn't work yetttt even though serverchan says it works
+FIXED!   +topic, wenn topicmode off is, kann jeder topic setzen, muss noch implementiert werden.

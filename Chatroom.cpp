@@ -122,7 +122,9 @@ User* Chatroom::findUserByNick(const std::string& nick)
          ++it)
     {
         if ((*it)->getNickname() == nick)
+        {
             return *it;
+        }
     }
     return NULL;
 }

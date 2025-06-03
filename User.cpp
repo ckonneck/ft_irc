@@ -342,10 +342,10 @@ void User::HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds)//this is f
     } else {
 
         
-        std::string msg = ":localhost 331 " + this->_nickname + " " + chatroom.getName() + " :No topic is set\r\n";
+        // std::string msg = ":localhost 331 " + this->_nickname + " " + chatroom.getName() + " :No topic is set\r\n";
         (void)fds;
         // chatroom.broadcastToYou(msg, this, fds);
-        appendToSendBuffer(msg);
+        //appendToSendBuffer(msg);
     }
 }
 

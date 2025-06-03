@@ -197,28 +197,34 @@ else if (m == 'o') {
             " MODE :Not enough parameters\r\n");
     } else {
         const std::string& nickArg = tokens[argIdx];
-        argList.push_back(nickArg);
+        argList.push_back(sanitize(nickArg));
         ++argIdx;
-        User* globalU = findUserByNickname(nickArg);
-        if (!globalU) {
+        User* globalU = findUserByNickname(sanitize(nickArg));
+        if (!globalU)
+        {
             requester->appendToSendBuffer(":" + servername +
                 " 401 " + requester->getNickname() +
                 " " + nickArg +
                 " :No such nick/channel\r\n");//I GET THIS DISPLAYED WHEN TRYING TO MODE +o SOMEONE.
-        } else {
-            User* memberU = chan->findUserByNick(nickArg);
-            if (!memberU) {
+        }
+        else
+        {
+            User* memberU = chan->findUserByNick(sanitize(nickArg));
+            if (!memberU)
+            {
                 requester->appendToSendBuffer(":" + servername +
                     " 441 " + requester->getNickname() +
                     " " + nickArg +
                     " " + chanName +
                     " :They aren't on that channel\r\n");
-            } else {
+            }
+            else
+            {
                 if (adding) {
                     if (!chan->isOperator(memberU)) {
                         chan->addOperator(memberU);
                         std::ostringstream msg;
-                        msg << ":" << servername << " NOTICE " << chanName << " :" << nickArg
+                        msg << ":" << servername << " NOTICE " << chanName << " :" << sanitize(nickArg)
                             << " is now a channel operator (set by " << requester->getNickname() << ")\r\n";
                         chan->broadcast(msg.str(), NULL, fds);
                     }
@@ -226,7 +232,7 @@ else if (m == 'o') {
                     if (chan->isOperator(memberU)) {
                         chan->removeOperator(memberU);
                         std::ostringstream msg;
-                        msg << ":" << servername << " NOTICE " << chanName << " :" << nickArg
+                        msg << ":" << servername << " NOTICE " << chanName << " :" << sanitize(nickArg)
                             << " is no longer a channel operator (unset by " << requester->getNickname() << ")\r\n";
                         chan->broadcast(msg.str(), NULL, fds);
                     }
@@ -575,7 +581,7 @@ void handleInvite(User* curr,
         inviteMsg += ":";
         inviteMsg += curr->getNickname();
         inviteMsg += "!";
-        inviteMsg += curr->getUsername();
+        inviteMsg += curr->getUsername();//formatting, what the fuck is this shit
         inviteMsg += "@";
         inviteMsg += curr->getHostname();
         inviteMsg += " INVITE ";
