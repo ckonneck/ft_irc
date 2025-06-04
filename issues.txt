@@ -6,7 +6,6 @@ Irssi: critical nicklist_set_host: assertion 'host != NULL' failed
 Irssi: critical g_ascii_strcasecmp: assertion 's1 != NULL' failed?????
 PRIVATE MESSAGING
 
-add PART support(parsing)(jan) //including leave message in chatroom probably
 add PONG;
 MODE ALL MODES (l und k zb);
 

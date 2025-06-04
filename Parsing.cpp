@@ -43,11 +43,10 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
 
     handleKick(curr, channelName, targetNick, reason, fds);
 }
-
-    else if (cmd == "JOIN" && tokens.size() > 1)
-                                 handleJoin(curr, fd, tokens[1], fds);
-    else if (cmd == "PRIVMSG")
-                                 handlePrivmsg(curr, fd, tokens, raw, fds);
+else if (cmd == "JOIN" && tokens.size() > 1)
+    handleJoin(curr, fd, tokens, fds);
+else if (cmd == "PRIVMSG")
+    handlePrivmsg(curr, fd, tokens, raw, fds);
        else if (cmd == "INVITE" && tokens.size() > 2)
         handleInvite(curr, tokens[1], tokens[2]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
@@ -129,172 +128,270 @@ void handleCap(User* curr, std::vector<std::string> tokens)
         }
     }
 
-bool isSpaceOrNewline(char c) {
-        return std::isspace(static_cast<unsigned char>(c)) || c == '\r' || c == '\n';
-    }
 
-    void handleMode(User* requester,
-        const std::string& chanName,
-        const std::string& flags,
-        const std::vector<std::string>& tokens,
-        std::vector<pollfd> &fds)
+bool isSpaceOrNewline(char c) {
+    return std::isspace(static_cast<unsigned char>(c)) || c == '\r' || c == '\n';
+}
+
+
+void handleMode(User* requester,
+                const std::string& chanName,
+                const std::string& flags,
+                const std::vector<std::string>& tokens,
+                std::vector<pollfd>& fds)
 {
-    std::cerr << "[DEBUG] flags received: '" << flags << "'\n";
-        for (size_t i = 0; i < flags.size(); ++i)
-    std::cerr << "[DEBUG] char[" << i << "]: '" << flags[i] << "' (" << int(flags[i]) << ")\n";
-    std::map<std::string,Chatroom*>::iterator itChan
-        = g_chatrooms.find(chanName);
+    // 1) Look up channel
+    std::map<std::string, Chatroom*>::iterator itChan =
+        g_chatrooms.find(chanName);
     if (itChan == g_chatrooms.end()) {
         requester->appendToSendBuffer(":" + servername +
-                           " 403 " + requester->getNickname() +
-                           " " + chanName +
-                           " :No such channel\r\n");
+            " 403 " + requester->getNickname() +
+            " " + chanName +
+            " :No such channel\r\n");
         return;
     }
     Chatroom* chan = itChan->second;
+
+    // 2) Membership check
     if (!chan->isMember(requester)) {
         requester->appendToSendBuffer(":" + servername +
-                           " 442 " + requester->getNickname() +
-                           " " + chanName +
-                           " :You're not on that channel\r\n");
+            " 442 " + requester->getNickname() +
+            " " + chanName +
+            " :You're not on that channel\r\n");
         return;
     }
+
+    // 3) Operator check
     if (!chan->isOperator(requester)) {
         requester->appendToSendBuffer(":" + servername +
-                           " 482 " + requester->getNickname() +
-                           " " + chanName +
-                           " :You're not channel operator\r\n");
+            " 482 " + requester->getNickname() +
+            " " + chanName +
+            " :You're not channel operator\r\n");
         return;
     }
 
-bool adding = true;
-size_t argIdx = 3;
-std::vector<std::string> argList;
-std::string cleanFlags = flags;
-cleanFlags.erase(std::remove_if(cleanFlags.begin(), cleanFlags.end(), isSpaceOrNewline), cleanFlags.end());
+    // 4) Prepare for per-letter handling
+    bool adding = true;
+    size_t argIdx = 3;  // first mode‐parameter index
+    std::vector<std::string> argList;
 
-for (std::string::const_iterator fit = cleanFlags.begin(); fit != cleanFlags.end(); ++fit)
+    // Remove whitespace/newlines from flags
+    std::string cleanFlags = flags;
+    cleanFlags.erase(
+        std::remove_if(cleanFlags.begin(), cleanFlags.end(), isSpaceOrNewline),
+        cleanFlags.end()
+    );
+
+    // 5) Loop over each mode character (C++98 iterator style)
+    for (std::string::const_iterator it = cleanFlags.begin();
+         it != cleanFlags.end(); ++it)
+    {
+        char m = *it;
+        if (m == '+') {
+            adding = true;
+            continue;
+        }
+        if (m == '-') {
+            adding = false;
+            continue;
+        }
+
+        if (m == 'i') {
+            handleModeInvite(chan, adding, requester, chanName, fds);
+        }
+        else if (m == 't') {
+            handleModeTopic(chan, adding, requester, chanName, fds);
+        }
+        else if (m == 'k') {
+            handleModeKey(chan, adding, requester, chanName,
+                          tokens, argIdx, fds, argList);
+        }
+        else if (m == 'l') {
+            handleModeLimit(chan, adding, requester, chanName,
+                            tokens, argIdx, fds, argList);
+        }
+        else if (m == 'o') {
+            handleModeOperator(chan, adding, requester, chanName,
+                               tokens, argIdx, fds, argList);
+        }
+        else {
+            handleModeUnknown(requester, m);
+        }
+    }
+
+    // 6) Broadcast the final "MODE" line with any parameters
+    std::ostringstream oss;
+    oss << ":" << requester->getNickname()
+        << "!" << requester->getUsername()
+        << "@" << requester->getHostname()
+        << " MODE " << chanName
+        << " " << flags;
+    for (size_t i = 0; i < argList.size(); ++i) {
+        oss << " " << argList[i];
+    }
+    oss << "\r\n";
+    chan->broadcast(oss.str(), NULL, fds);
+}
+
+
+void handleModeInvite(Chatroom* chan, bool adding, User* requester,
+                      const std::string& chanName, std::vector<pollfd>& fds)
 {
-char m = *fit;
-if (m == '+') { adding = true;  continue; }
-if (m == '-') { adding = false; continue; }
-
-if (m == 'i') {
     chan->setInviteOnly(adding);
     std::ostringstream msg;
-    msg << ":" << servername << " NOTICE " << chanName << " :Channel is now "
-        << (adding ? "invite-only" : "open") << ", set by " << requester->getNickname() << "\r\n";
+    msg << ":" << servername << " NOTICE " << chanName
+        << " :Channel is now "
+        << (adding ? "invite-only" : "open")
+        << ", set by " << requester->getNickname()
+        << "\r\n";
     chan->broadcast(msg.str(), NULL, fds);
 }
-else if (m == 't') {
+
+
+void handleModeTopic(Chatroom* chan, bool adding, User* requester,
+                     const std::string& chanName, std::vector<pollfd>& fds)
+{
     chan->setTopicOnlyOps(adding);
     std::ostringstream msg;
-    if (adding == true)
-    {
-        msg << ":" << servername << " NOTICE " << chanName << " :Only ops can "
-            << (adding ? "change topic now" : "freely change topic") << ", set by " << requester->getNickname() << "\r\n";
-    }
-    else
-    {
-        msg << ":" << servername << " NOTICE " << chanName << " :Everyone can change topic now "
-        << ", set by " << requester->getNickname() << "\r\n";
+    if (adding) {
+        msg << ":" << servername << " NOTICE " << chanName
+            << " :Only ops can change topic now, set by "
+            << requester->getNickname() << "\r\n";
+    } else {
+        msg << ":" << servername << " NOTICE " << chanName
+            << " :Everyone can change topic now, set by "
+            << requester->getNickname() << "\r\n";
     }
     chan->broadcast(msg.str(), NULL, fds);
 }
-else if (m == 'k') {
+
+
+void handleModeKey(Chatroom* chan, bool adding, User* requester,
+                   const std::string& chanName,
+                   const std::vector<std::string>& tokens,
+                   size_t& argIdx, std::vector<pollfd>& fds,
+                   std::vector<std::string>& argList)
+{
     if (adding) {
         if (tokens.size() <= argIdx) {
+            // Not enough params
             requester->appendToSendBuffer(":" + servername +
                 " 461 " + requester->getNickname() +
                 " MODE :Not enough parameters\r\n");
         } else {
-            chan->setKey(tokens[argIdx]);
+            const std::string& keyParam = tokens[argIdx];
+            chan->setKey(keyParam);
             std::ostringstream msg;
-            msg << ":" << servername << " NOTICE " << chanName << " :Channel key set by " << requester->getNickname() << "\r\n";
+            msg << ":" << servername << " NOTICE " << chanName
+                << " :Channel key set by " << requester->getNickname()
+                << "\r\n";
             chan->broadcast(msg.str(), NULL, fds);
-            argList.push_back(tokens[argIdx]);
-            ++argIdx;
+            argList.push_back(keyParam);
+            argIdx++;
         }
     } else {
+        // Removing key
         chan->unsetKey();
         std::ostringstream msg;
-        msg << ":" << servername << " NOTICE " << chanName << " :Channel key removed by " << requester->getNickname() << "\r\n";
+        msg << ":" << servername << " NOTICE " << chanName
+            << " :Channel key removed by " << requester->getNickname()
+            << "\r\n";
         chan->broadcast(msg.str(), NULL, fds);
     }
 }
-else if (m == 'l') {
+
+void handleModeLimit(Chatroom* chan, bool adding, User* requester,
+                     const std::string& chanName,
+                     const std::vector<std::string>& tokens,
+                     size_t& argIdx, std::vector<pollfd>& fds,
+                     std::vector<std::string>& argList)
+{
     if (adding) {
         if (tokens.size() <= argIdx) {
+            // Not enough params
             requester->appendToSendBuffer(":" + servername +
                 " 461 " + requester->getNickname() +
                 " MODE :Not enough parameters\r\n");
         } else {
-            int lim = atoi(tokens[argIdx].c_str());
+            int lim = std::atoi(tokens[argIdx].c_str());
             if (lim <= 0) {
+                // Invalid limit
                 requester->appendToSendBuffer(":" + servername +
                     " 461 " + requester->getNickname() +
                     " MODE :Invalid user limit\r\n");
-                continue;
+            } else {
+                chan->setLimit(lim);
+                std::ostringstream msg;
+                msg << ":" << servername << " NOTICE " << chanName
+                    << " :User limit set to " << lim
+                    << " by " << requester->getNickname()
+                    << "\r\n";
+                chan->broadcast(msg.str(), NULL, fds);
+                argList.push_back(tokens[argIdx]);
+                argIdx++;
             }
-            chan->setLimit(lim);
-            std::ostringstream msg;
-            msg << ":" << servername << " NOTICE " << chanName << " :User limit set to " << lim
-                << " by " << requester->getNickname() << "\r\n";
-            chan->broadcast(msg.str(), NULL, fds);
-            argList.push_back(tokens[argIdx]);
-            ++argIdx;
         }
     } else {
+        // Removing limit
         chan->unsetLimit();
         std::ostringstream msg;
-        msg << ":" << servername << " NOTICE " << chanName << " :User limit removed by " << requester->getNickname() << "\r\n";
+        msg << ":" << servername << " NOTICE " << chanName
+            << " :User limit removed by " << requester->getNickname()
+            << "\r\n";
         chan->broadcast(msg.str(), NULL, fds);
     }
 }
-else if (m == 'o') {
+
+void handleModeOperator(Chatroom* chan, bool adding, User* requester,
+                        const std::string& chanName,
+                        const std::vector<std::string>& tokens,
+                        size_t& argIdx, std::vector<pollfd>& fds,
+                        std::vector<std::string>& argList)
+{
     if (tokens.size() <= argIdx) {
+        // Missing nickname parameter
         requester->appendToSendBuffer(":" + servername +
             " 461 " + requester->getNickname() +
             " MODE :Not enough parameters\r\n");
     } else {
         const std::string& nickArg = tokens[argIdx];
-        argList.push_back(sanitize(nickArg));
-        ++argIdx;
-        User* globalU = findUserByNickname(sanitize(nickArg));
-        if (!globalU)
-        {
+        std::string cleanNick = sanitize(nickArg);
+        argList.push_back(cleanNick);
+        argIdx++;
+
+        User* globalU = findUserByNickname(cleanNick);
+        if (!globalU) {
             requester->appendToSendBuffer(":" + servername +
                 " 401 " + requester->getNickname() +
                 " " + nickArg +
-                " :No such nick/channel\r\n");//I GET THIS DISPLAYED WHEN TRYING TO MODE +o SOMEONE.
-        }
-        else
-        {
-            User* memberU = chan->findUserByNick(sanitize(nickArg));
-            if (!memberU)
-            {
+                " :No such nick/channel\r\n");
+        } else {
+            User* memberU = chan->findUserByNick(cleanNick);
+            if (!memberU) {
                 requester->appendToSendBuffer(":" + servername +
                     " 441 " + requester->getNickname() +
                     " " + nickArg +
                     " " + chanName +
                     " :They aren't on that channel\r\n");
-            }
-            else
-            {
+            } else {
                 if (adding) {
                     if (!chan->isOperator(memberU)) {
                         chan->addOperator(memberU);
                         std::ostringstream msg;
-                        msg << ":" << servername << " NOTICE " << chanName << " :" << sanitize(nickArg)
-                            << " is now a channel operator (set by " << requester->getNickname() << ")\r\n";
+                        msg << ":" << servername << " NOTICE " << chanName
+                            << " :" << cleanNick
+                            << " is now a channel operator (set by "
+                            << requester->getNickname() << ")\r\n";
                         chan->broadcast(msg.str(), NULL, fds);
                     }
                 } else {
                     if (chan->isOperator(memberU)) {
                         chan->removeOperator(memberU);
                         std::ostringstream msg;
-                        msg << ":" << servername << " NOTICE " << chanName << " :" << sanitize(nickArg)
-                            << " is no longer a channel operator (unset by " << requester->getNickname() << ")\r\n";
+                        msg << ":" << servername << " NOTICE " << chanName
+                            << " :" << cleanNick
+                            << " is no longer a channel operator (unset by "
+                            << requester->getNickname() << ")\r\n";
                         chan->broadcast(msg.str(), NULL, fds);
                     }
                 }
@@ -302,25 +399,16 @@ else if (m == 'o') {
         }
     }
 }
-else {
+
+void handleModeUnknown(User* requester, char m)
+{
+    std::string modeChar(1, m);
     requester->appendToSendBuffer(":" + servername +
         " 472 " + requester->getNickname() +
-        " " + std::string(1, m) +
+        " " + modeChar +
         " :is unknown mode char to me\r\n");
 }
-}
 
-std::ostringstream oss;
-oss << ":" << requester->getNickname()
-<< "!" << requester->getUsername()
-<< "@" << requester->getHostname()
-<< " MODE " << chanName
-<< " " << flags;
-for (std::vector<std::string>::iterator it = argList.begin(); it != argList.end(); ++it)
-oss << " " << *it;
-oss << "\r\n";
-chan->broadcast(oss.str(), NULL, fds);
-}
 
 void handlePing(int fd)
 {
@@ -435,69 +523,104 @@ void handleKick(User* requester,
 
 
 
-void handleJoin(User* curr, int fd, const std::string& chanArg, std::vector<pollfd> &fds)
+void handleJoin(User* curr,
+                int fd,
+                const std::vector<std::string>& tokens,
+                std::vector<pollfd>& fds)
 {
-	if (uniqueNick(curr) == false)
-		{
-            // giveTempNick(curr, fds);
-			return;
-        }
-	std::cout << "debug1=99" << std::endl;
-    std::string chanName = sanitize(chanArg);
-    if (chanName.empty() || chanName[0] != '#')
-    {
-        std::cout << "  Invalid channel name " << chanArg << std::endl;
+    if (! uniqueNick(curr)) {
+        return;
+    }
+    std::string chanName = sanitize(tokens[1]);
+    if (chanName.empty() || chanName[0] != '#') {
+        std::cout << "  Invalid channel name " << tokens[1] << std::endl;
         return;
     }
 
-    Chatroom *chan = NULL;
+    Chatroom* chan = NULL;
     std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(chanName);
-    if (it == g_chatrooms.end())
-    {
+    if (it == g_chatrooms.end()) {
         chan = new Chatroom(chanName);
         g_chatrooms[chanName] = chan;
         chan->addOperator(curr);
-        std::cout << "User: " << curr->getNickname() << " is Operator of " << chan->getName() << std::endl; 
-    }
-    else
-    {
+        std::cout << "User: " << curr->getNickname()
+                  << " is Operator of " << chan->getName() << std::endl;
+    } else {
         chan = it->second;
     }
-    if (chan->isInviteOnly() && !chan->isInvited(curr)) {
-    // 473 = ERR_INVITEONLYCHAN
-    std::string err = ":" + servername +
-        " 473 " + curr->getNickname() +
-        " " + chanName +
-        " :Cannot join channel (+i)\r\n";
-    curr->appendToSendBuffer(err);
-    return;
+
+    if (chan->isInviteOnly() && ! chan->isInvited(curr)) {
+        std::string err = ":" + servername
+                        + " 473 "      // ERR_INVITEONLYCHAN
+                        + curr->getNickname()
+                        + " " + chanName
+                        + " :Cannot join channel (+i)\r\n";
+        curr->appendToSendBuffer(err);
+        return;
     }
 
+    if (chan->hasKey()) {
+        // tokens.size() must be >= 3 to supply a key
+        if (tokens.size() <= 2) {
+            // No key supplied → ERR_BADCHANNELKEY
+            std::string err = ":" + servername
+                            + " 475 "      // ERR_BADCHANNELKEY
+                            + curr->getNickname()
+                            + " " + chanName
+                            + " :Bad Channel Key\r\n";
+            curr->appendToSendBuffer(err);
+            return;
+        }
+
+        const std::string& givenKey = tokens[2];
+        if (givenKey != chan->getKey()) {
+            // Wrong key → ERR_BADCHANNELKEY
+            std::string err = ":" + servername
+                            + " 475 "
+                            + curr->getNickname()
+                            + " " + chanName
+                            + " :Bad Channel Key\r\n";
+            curr->appendToSendBuffer(err);
+            return;
+        }
+    }
     chan->addUser(curr);
-   
-    std::string joinMsg = ":" + curr->getNickname() + " JOIN :" + chanName + "\r\n";
+    std::string joinMsg = ":" + curr->getNickname()
+                        + " JOIN :" + chanName
+                        + "\r\n";
     chan->broadcast(joinMsg, NULL, fds);
     curr->appendToSendBuffer(joinMsg);
+
     const std::vector<User*>& members = chan->getMembers();
     std::string nameList;
-    for (size_t i = 0; i < members.size(); ++i)
-    {
-        if (!nameList.empty())
+    for (size_t i = 0; i < members.size(); ++i) {
+        if (! nameList.empty())
             nameList += " ";
+
         // Prefix with @ if the user is an operator (optional)
         if (chan->isOperator(members[i]))
             nameList += "@";
         nameList += members[i]->getNickname();
     }
 
-    std::string rpl_353 = ":" + servername + " 353 " + curr->getNickname() + " = " + chanName + " :" + nameList + "\r\n";
-    std::string rpl_366 = ":" + servername + " 366 " + curr->getNickname() + " " + chanName + " :End of /NAMES list\r\n";
+    std::string rpl_353 = ":" + servername
+                        + " 353 "     // RPL_NAMREPLY
+                        + curr->getNickname()
+                        + " = " + chanName
+                        + " :" + nameList
+                        + "\r\n";
+    std::string rpl_366 = ":" + servername
+                        + " 366 "     // RPL_ENDOFNAMES
+                        + curr->getNickname()
+                        + " " + chanName
+                        + " :End of /NAMES list\r\n";
+
     curr->addNewMemberToChatroom(chan);
     curr->appendToSendBuffer(rpl_353);
     curr->appendToSendBuffer(rpl_366);
     curr->HSTopicQuery(*chan, fds);
-    (void) fd;
-    // join_channel(fd, curr->getNickname(), chanName); OBSOLETE;REPLACE WITH CALL UPSTAIRS
+
+    (void) fd;  // unused
 }
 
 void handlePrivmsg(User* curr,

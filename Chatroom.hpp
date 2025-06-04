@@ -14,12 +14,14 @@ class Chatroom
         void broadcastToYou(const std::string &msg, User *sender, std::vector<pollfd> &fds);
 
         std::string getName();
+
         std::string getTopic();
         std::string getLastTopicSetter();
         bool hasTopic();
         time_t getTopicTime();
         void setTopicOnlyOps(bool on);
         bool isTopicOnlyOps() const;
+
         void addUser(User *user);
         void removeUser(User* user);
 		bool isMember(User* u) const;
@@ -27,19 +29,23 @@ class Chatroom
         User* findUserByNick(const std::string& nick);
         void addOperator(User* u);
         void removeOperator(User* u);
+
         bool isInvited(User* u) const;
         void inviteUser(User* u);
         bool isInviteOnly() const;
         void uninviteUser(User* u);
         void setInviteOnly(bool on);
+        
         void setLimit(int max);
         void unsetLimit();
         bool hasLimit() const;
         int  getLimit() const;
+
         void setKey(const std::string& key);
         void unsetKey();
         bool hasKey() const;
         const std::string& getKey() const;
+
         const std::vector<User*>& getMembers() const;
         void removeUserFromChatroom(User *user);
         void broadcastonce(const std::string &msg, User *sender, std::vector<pollfd> &fds, std::set<int>& alreadyNotifiedFDs);
