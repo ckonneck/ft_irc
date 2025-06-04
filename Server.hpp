@@ -21,6 +21,7 @@ class Chatroom;
 
 extern std::map<std::string, Chatroom*> g_chatrooms;
 extern std::vector<User*> g_mappa;
+extern std::string servername;
 
 class PasswordManager {
 public:

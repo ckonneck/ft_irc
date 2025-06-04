@@ -265,12 +265,40 @@ std::string random_ascii_kitty()
 
 void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds)
 {
-    // std::cout << "[DEBUG-broadcast] &fds=" << &fds
-    //           << ", first_fd=" << (fds.empty() ? -1 : fds[0].fd)
-    //           << ", size=" << fds.size() << "\n";
+   // 1) If there is a sender, verify they are in this channel
+    if (sender != NULL) {
+        bool isMember = false;
 
-    for (size_t i = 0; i < members_in_room.size(); ++i)
-    {std::cout << members_in_room[i]->getNickname() << std::endl;}
+        // Look through members_in_room to see if sender is present
+        for (std::vector<User*>::size_type i = 0; i < members_in_room.size(); ++i) {
+            if (members_in_room[i] == sender) {
+                isMember = true;
+                break;
+            }
+        }
+
+        if (!isMember) {
+            // Sender is not on this channel → ERR_NOTONCHANNEL (442)
+            // Format:  "<servername> 442 <nick> <channel> :You're not on that channel"
+            std::string err = ":" + servername
+                            + " 442 "
+                            + sender->getNickname()
+                            + " " + this->_channelname
+                            + " :You're not on that channel\r\n";
+            sender->appendToSendBuffer(err);
+
+            // Ensure we flag POLLOUT on sender’s fd so the client sees the error
+            int sender_fd = sender->getFD();
+            for (std::vector<pollfd>::size_type j = 0; j < fds.size(); ++j) {
+                if (fds[j].fd == sender_fd) {
+                    fds[j].events |= POLLOUT;
+                    break;
+                }
+            }
+
+            return;
+        }
+    }
 
 
          for (size_t i = 0; i < members_in_room.size(); ++i) {
