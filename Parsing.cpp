@@ -583,6 +583,20 @@ void handleJoin(User* curr,
             curr->appendToSendBuffer(err);
             return;
         }
+        if (chan->hasLimit()) {
+             const std::vector<User*>& members = chan->getMembers();
+                if (static_cast<int>(members.size()) >= chan->getLimit()) {
+                 // Channel is full → ERR_CHANNELISFULL (471)
+                     std::string err = ":" + servername
+                        + " 471 "
+                        + curr->getNickname()
+                        + " " + chanName
+                        + " :Cannot join channel (+l)\r\n";
+                    curr->appendToSendBuffer(err);
+            return;
+    }
+}
+
     }
     chan->addUser(curr);
     std::string joinMsg = ":" + curr->getNickname()
