@@ -143,8 +143,8 @@ std::string uwuTasticNick()
         const char* second = syllables[std::rand() % count];
 
         int number = std::rand() % 100;  // 0–99
-        char numBuf[3];
-        std::sprintf(numBuf, "%d", number);
+        char numBuf[4]; 
+        std::snprintf(numBuf, sizeof(numBuf), "%d", number);
 
         std::string nick = std::string(first) + second + numBuf;
 

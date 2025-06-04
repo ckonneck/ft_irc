@@ -54,13 +54,66 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
         handleTopic(curr, raw, tokens, fds);
     else if (cmd == "MODE" && tokens.size() > 2)
        handleMode(curr, tokens[1], tokens[2], tokens, fds);
+    else if (cmd == "PART" && tokens.size() > 1)
+        handlePart(curr, tokens[1], fds);
+
     // else if (cmd == "QUIT")
     //     handleQuit(fd);  still doing double deletion with this one. getting invalid read, works fine without it. 3.jun.12.01
     else if (cmd == "CAP")
         handleCap(curr, tokens);
     }
 
-    void handleCap(User* curr, std::vector<std::string> tokens)
+    
+void handlePart(User* curr,
+                const std::string& channelName,
+                std::vector<pollfd>& fds)
+{
+    std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(channelName);
+    if (it == g_chatrooms.end()) {
+        std::string err = std::string(":")
+            + servername
+            + " 403 "
+            + curr->getNickname()
+            + " "
+            + channelName
+            + " :No such channel\r\n";
+        curr->appendToSendBuffer(err);
+        return;
+    }
+    Chatroom* chan = it->second;
+
+    if (! chan->isMember(curr)) {
+        std::string err = std::string(":")
+            + servername
+            + " 442 "
+            + curr->getNickname()
+            + " "
+            + channelName
+            + " :You're not on that channel\r\n";
+        curr->appendToSendBuffer(err);
+        return;
+    }
+
+    std::string prefix = curr->getNickname() 
+                       + std::string("!") 
+                       + curr->getUsername() 
+                       + std::string("@") 
+                       + curr->getHostname();
+    std::string partLine = std::string(":")
+        + prefix
+        + " PART "
+        + channelName
+        + "\r\n";
+
+    chan->broadcast(partLine, curr, fds);
+
+    curr->removeChatroom(channelName);
+    chan->removeUser(curr);
+
+    curr->appendToSendBuffer(partLine);
+}
+
+void handleCap(User* curr, std::vector<std::string> tokens)
     {
         if (tokens.size() < 2)
             return;
