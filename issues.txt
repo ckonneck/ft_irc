@@ -7,7 +7,6 @@ Irssi: critical g_ascii_strcasecmp: assertion 's1 != NULL' failed?????
 PRIVATE MESSAGING
 
 add PONG;
-MODE ALL MODES (l und k zb);
 
 
 
@@ -17,7 +16,7 @@ webcam, bad apple
 
 semidone:
 
-invite, but needs further testing
+invite, but needs further testing // confirmed
 temporary nickname. errormessage subject to change.
 also needs a different errormessage/behaviour when trying to change nick to someone who exists.
 it literally discards your previous nickname and gives you a temporary one
@@ -30,6 +29,7 @@ wenn kein operator im raum ist, sollte der naechste in line operator kriegen
 
 DONE;
 
+mode stuff seems to work now
 FIXED!	topic, but needs -t flag implementiert dass jeder topic setzen kann wenn er will.
 FIXED!  nickchange sends to all chatrooms right now, not only the ones the dude is in
 FIXED!   Mode +o doesn't work yetttt even though serverchan says it works
