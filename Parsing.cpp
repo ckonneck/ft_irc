@@ -136,8 +136,16 @@ if (m == 'i') {
 else if (m == 't') {
     chan->setTopicOnlyOps(adding);
     std::ostringstream msg;
-    msg << ":" << servername << " NOTICE " << chanName << " :Only ops can "
-        << (adding ? "change topic now" : "freely change topic") << ", set by " << requester->getNickname() << "\r\n";
+    if (adding == true)
+    {
+        msg << ":" << servername << " NOTICE " << chanName << " :Only ops can "
+            << (adding ? "change topic now" : "freely change topic") << ", set by " << requester->getNickname() << "\r\n";
+    }
+    else
+    {
+        msg << ":" << servername << " NOTICE " << chanName << " :Everyone can change topic now "
+        << ", set by " << requester->getNickname() << "\r\n";
+    }
     chan->broadcast(msg.str(), NULL, fds);
 }
 else if (m == 'k') {
