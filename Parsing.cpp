@@ -583,6 +583,8 @@ void handleJoin(User* curr,
             curr->appendToSendBuffer(err);
             return;
         }
+    }
+        std::cout << "LIMIT-TEST limit: " << chan->hasLimit() << "members" << std::endl;
         if (chan->hasLimit()) {
              const std::vector<User*>& members = chan->getMembers();
                 if (static_cast<int>(members.size()) >= chan->getLimit()) {
@@ -596,8 +598,6 @@ void handleJoin(User* curr,
             return;
     }
 }
-
-    }
     chan->addUser(curr);
     std::string joinMsg = ":" + curr->getNickname()
                         + " JOIN :" + chanName
