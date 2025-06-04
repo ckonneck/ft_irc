@@ -29,7 +29,7 @@ wenn kein operator im raum ist, sollte der naechste in line operator kriegen
 
 DONE;
 
-mode stuff seems to work now
+mode stuff seems to work now probier wilde sachen
 FIXED!	topic, but needs -t flag implementiert dass jeder topic setzen kann wenn er will.
 FIXED!  nickchange sends to all chatrooms right now, not only the ones the dude is in
 FIXED!   Mode +o doesn't work yetttt even though serverchan says it works
