@@ -13,7 +13,6 @@ class User
         void HSNick(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds);
                 void HSNickdb(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds);
 
-        void HSKick(const std::string &target);
         void HSInvite(const std::string &whotoinv);
         void HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds);
         void HSSetTopic(std::vector<std::string> tokens, Chatroom &chatroom, std::vector<pollfd> &fds);
@@ -45,6 +44,7 @@ class User
         void removeChatroom(const std::string& name);
         std::map<std::string, Chatroom*>& getChatrooms();
         void leaveAllChatrooms();
+        
 
     private:
         bool _rdyToWrite;

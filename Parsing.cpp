@@ -278,12 +278,24 @@ void handlePing(int fd)
 
 void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
 {
+
     std::string oldnick = curr->getNickname();
     std::string newnick = parseNick(raw);
-    if (findUserByNickname(newnick) != NULL)
+
+    User *check = findUserByNickname(newnick);
+    
+    if (findUserByNickname(newnick) != NULL && check->getFD() != curr->getFD())
     {
+        std::ostringstream oss;
+        oss << "NICK " << uwuTasticNick();
+        std::string temp = oss.str();
         std::string err = ":localhost 433 * " + newnick + " :Nickname is already in use\r\n";
-        curr->appendToSendBuffer(err);
+        //curr->appendToSendBuffer(err);
+        curr->appendToSendBuffer("Either the nickname was already taken, or you tried to steal someone else's nickname.\r\n");
+        curr->appendToSendBuffer("Doesn't matter. you get a BETTER ONE NOW\r\n");
+        curr->setNickname(parseNick(temp));
+        curr->HSNick(oldnick, parseNick(temp), fds);
+        
         return;
     }
     curr->setNickname(newnick);
@@ -373,8 +385,10 @@ void handleKick(User* requester,
 void handleJoin(User* curr, int fd, const std::string& chanArg, std::vector<pollfd> &fds)
 {
 	if (uniqueNick(curr) == false)
-		
+		{
+            // giveTempNick(curr, fds);
 			return;
+        }
 	std::cout << "debug1=99" << std::endl;
     std::string chanName = sanitize(chanArg);
     if (chanName.empty() || chanName[0] != '#')

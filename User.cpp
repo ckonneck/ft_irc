@@ -168,23 +168,16 @@ void User::HSNick(const std::string &oldname, const std::string &newname, std::v
 //               << ", size=" << fds.size() << "\n";
     std::string nickMsg = ":" + oldname + "!user@localhost NICK :" + newname + "\r\n";
     appendToSendBuffer(nickMsg);//maybe this needs to go, maybe not
-    // printChatrooms();
     std::set<int> alreadyNotifiedFDs;
     std::map<std::string, Chatroom*>::iterator it;
-for (it = roomsThisUserIsMemberIn.begin(); it != roomsThisUserIsMemberIn.end(); ++it)
-{
-    std::string channelName = it->first;
-    Chatroom* room = it->second;
-
-    if (room)
+    for (it = roomsThisUserIsMemberIn.begin(); it != roomsThisUserIsMemberIn.end(); ++it)
     {
-        std::cout << "User is in: " << channelName << std::endl;
-        std::cout << "broadcasting to HSNICK"<< channelName << std::endl;
-        it->second->broadcastonce(nickMsg, this, fds, alreadyNotifiedFDs);
-    }
-    //user get members in chatrooms
-    //chatroom members 
-    //WHEN THIS IS FIXED, THE OTHER ERROR OF DOUBLE AND TRIPLE NICKNAME WILL ALSO GO
+        std::string channelName = it->first;
+        Chatroom* room = it->second;
+        if (room)
+        {
+            it->second->broadcastonce(nickMsg, this, fds, alreadyNotifiedFDs);
+        }
     }
 }
 
@@ -292,22 +285,14 @@ User* findUserByNickname(const std::string& nick)
     for (size_t i = 0; i < g_mappa.size(); ++i)
     {
         User* user = g_mappa[i];
+        std::cout << "found: " << user->getNickname() << std::endl;
         if (user->getNickname() == nick)
             return user;
     }
+    std::cout << "returning NULL" << std::endl;
     return NULL;
 }
 
-void User::HSKick(const std::string &target)//templates for later parsing
-{   
-    if (this->_isOP != true)
-        return;
-    std::string reason = "guy is racist";
-    std::string channel = "yeanoidea";
-    std::string msg = ":" + this->_nickname + "!user@localhost KICK " 
-        + channel + " " + target + " :" + reason + "\r\n";
-    appendToSendBuffer(msg);
-}
 
 void User::HSInvite(const std::string &whotoinv)
 {

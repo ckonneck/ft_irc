@@ -68,8 +68,9 @@ std::cout << "debug3" << std::endl;
         if (u != usr && u->getNickname() == nick)
 		{
 			//433 ERR_NICKNAMEINUSE "<nick> :Nickname is already in use"
-				std::string msg =" 433 ERR_NICKNAMEINUSE " + usr->getNickname() +" :Nickname is already in use\r\n";
-   			    usr->appendToSendBuffer(msg);
+				// std::string msg =" 433 ERR_NICKNAMEINUSE " + usr->getNickname() +" :Nickname is already in use\r\n";
+   			    // usr->appendToSendBuffer(msg);
+                //maybe givetempnick here?
             return false;
 		}
     }

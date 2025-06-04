@@ -1,13 +1,12 @@
 TO DO:
 
-vllt temporary nickname
 no such channel bei welcome u8: No such channel
 serverpasswort implementen
 Irssi: critical nicklist_set_host: assertion 'host != NULL' failed
 Irssi: critical g_ascii_strcasecmp: assertion 's1 != NULL' failed?????
 PRIVATE MESSAGING
 
-add PART support(parsing)(jan)
+add PART support(parsing)(jan) //including leave message in chatroom probably
 add PONG;
 MODE ALL MODES (l und k zb);
 
@@ -15,16 +14,19 @@ MODE ALL MODES (l und k zb);
 
 TO DO EMIL(Management)
 alles testen, alles machen, file support, chatgpt anbindung, bot, banlist, filter, 
-webcam 
+webcam, bad apple
 
 semidone:
 
 invite, but needs further testing
-
-
+temporary nickname. errormessage subject to change.
+also needs a different errormessage/behaviour when trying to change nick to someone who exists.
+it literally discards your previous nickname and gives you a temporary one
+//is not a problem, but invites spamming to generate a new name.
 
 wenn kein operator im raum ist, sollte der naechste in line operator kriegen 
 //unsicher ob das so im protokoll is oder nich.
+//nach research isses uns ueberlassen ob wir das so implementieren wollen oder nicht.
 
 
 DONE;

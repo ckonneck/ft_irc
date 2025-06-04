@@ -121,3 +121,38 @@ std::string extractAfterHashBlock(const std::vector<std::string>& words) {
 
     return result;
 }
+
+#include <cstdio>
+static std::set<std::string> generatedNicks;
+
+std::string uwuTasticNick()
+{
+    static const char* syllables[] = {
+        "senpai","baka","chan","buta", "senpai" "uwu", "nya", "me", "ne", "mo", "ki", "bu", "po", "lo", "chu", "rin", "ko", "mi", "lu", "to"
+    };
+    const int count = sizeof(syllables) / sizeof(syllables[0]);
+
+    static bool seeded = false;
+    if (!seeded) {
+        std::srand(std::time(NULL));
+        seeded = true;
+    }
+
+    for (int attempts = 0; attempts < 1000; ++attempts) {
+        const char* first = syllables[std::rand() % count];
+        const char* second = syllables[std::rand() % count];
+
+        int number = std::rand() % 100;  // 0–99
+        char numBuf[3];
+        std::sprintf(numBuf, "%d", number);
+
+        std::string nick = std::string(first) + second + numBuf;
+
+        if (nick.length() <= 9 && generatedNicks.find(nick) == generatedNicks.end()) {
+            generatedNicks.insert(nick);
+            return nick;
+        }
+    }
+
+    return "uwu0";
+}
