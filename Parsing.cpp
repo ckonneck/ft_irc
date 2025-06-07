@@ -51,8 +51,28 @@ else if (cmd == "PRIVMSG")
         handleInvite(curr, tokens[1], tokens[2]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
         handleTopic(curr, raw, tokens, fds);
-    else if (cmd == "MODE" && tokens.size() > 2)
-       handleMode(curr, tokens[1], tokens[2], tokens, fds);
+ else if (cmd == "MODE" && tokens.size() > 2) {
+    const std::string &target = tokens[1];
+    const std::string &flags  = tokens[2];
+
+    if (!target.empty() && target[0] == '#') {
+        // channel mode
+        handleMode(curr, target, flags, tokens, fds);
+    }
+    else if (target == curr->getNickname()) {
+        // user mode
+        handleUserMode(curr, flags, fds);
+    }
+    else {
+        // neither channel nor self → no such nick
+        std::ostringstream err;
+        err << ":" << servername
+            << " 401 " << curr->getNickname()
+            << " "       << target
+            << " :No such nick\r\n";
+        curr->appendToSendBuffer(err.str());
+    }
+}
     else if (cmd == "PART" && tokens.size() > 1)
         handlePart(curr, tokens[1], fds);
 
@@ -131,6 +151,43 @@ void handleCap(User* curr, std::vector<std::string> tokens)
 
 bool isSpaceOrNewline(char c) {
     return std::isspace(static_cast<unsigned char>(c)) || c == '\r' || c == '\n';
+}
+
+
+void handleUserMode(User* user,
+                    const std::string& flags,
+                    std::vector<pollfd>& fds)
+{
+    bool adding = true;
+
+    // strip whitespace/newlines
+    std::string clean = flags;
+    clean.erase(
+        std::remove_if(clean.begin(), clean.end(), isSpaceOrNewline),
+        clean.end()
+    );
+
+    for (std::string::const_iterator it = clean.begin(); it != clean.end(); ++it) {
+        char m = *it;
+        if      (m == '+')            { adding = true; continue; }
+        else if (m == '-')            { adding = false; continue; }
+        else if (m == 'i')            { user->setInvisible(adding); }
+        else /* unsupported flag */   { /* optionally reply ERR_UMODEUNKNOWNFLAG */ }
+    }
+
+    // ACK back to the client
+    std::ostringstream reply;
+    reply << ":" << servername
+          << " MODE " << user->getNickname()
+          << " "   << flags
+          << "\r\n";
+    user->appendToSendBuffer(reply.str());
+
+    // ensure we POLLOUT on this fd
+    int fd = user->getFD();
+    for (std::vector<pollfd>::iterator p = fds.begin(); p != fds.end(); ++p) {
+        if (p->fd == fd) { p->events |= POLLOUT; break; }
+    }
 }
 
 

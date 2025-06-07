@@ -54,6 +54,9 @@ void handleMode(User* requester,
                 const std::string& chanName,
                 const std::string& flags,
                 const std::vector<std::string>& tokens, std::vector<pollfd> &fds);
+void handleUserMode(User* user,
+                    const std::string& flags,
+                    std::vector<pollfd>& fds);
 void handleCap(User* curr, std::vector<std::string> tokens);
 void handlePart(User* curr, const std::string& channelName, std::vector<pollfd>& fds);
 void handleModeInvite(Chatroom* chan, bool adding, User* requester,

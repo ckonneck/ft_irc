@@ -44,6 +44,8 @@ class User
         void removeChatroom(const std::string& name);
         std::map<std::string, Chatroom*>& getChatrooms();
         void leaveAllChatrooms();
+        void setInvisible(bool on);
+        bool isInvisible() const;
         
 
     private:
@@ -61,4 +63,5 @@ class User
 		int _FD;
 		std::string _auth_state;
         bool _passValid;
+        bool        _invisible;
 };

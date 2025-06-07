@@ -5,7 +5,7 @@ std::vector<User*> g_mappa;
 std::map<std::string, Chatroom*> g_chatrooms;
 
 User::User(const std::string &nickname,const std::string &password) 
-    : _username(""), _nickname(nickname), _password(password), _hostname(""), _passValid(false)
+    : _username(""), _nickname(nickname), _password(password), _hostname(""), _passValid(false),_invisible(false)
 {
     this->_isOP = false;
     std::cout << "User "<< this->_nickname <<" has been created" <<std::endl;
@@ -61,6 +61,16 @@ void User::setPassValid(bool ok)
 //     int fd = _FD;
 //     write(fd, msg.c_str(), msg.size());
 // }
+
+void User::setInvisible(bool on)
+{
+    _invisible = on;
+}
+
+bool User::isInvisible() const
+{
+    return _invisible;
+}
 
 std::string parseNick(const std::string &msg)
 {
