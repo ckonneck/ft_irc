@@ -1,6 +1,5 @@
 TO DO:
 
-no such channel bei welcome u8: No such channel
 serverpasswort implementen
 Irssi: critical nicklist_set_host: assertion 'host != NULL' failed
 Irssi: critical g_ascii_strcasecmp: assertion 's1 != NULL' failed?????

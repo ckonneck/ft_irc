@@ -1,6 +1,9 @@
 #include "Chatroom.hpp"
 #include "Server.hpp"
 
+// Maximum nickname length per RFC1459
+static const std::size_t MAX_NICK_LEN = 9;
+
 
 Chatroom::Chatroom(const std::string &name)
     : _topicTime(0),
@@ -38,44 +41,51 @@ bool Chatroom::isMember(User* u) const
            != members_in_room.end();
 }
 
-bool uniqueNick(User* usr)
+bool uniqueNick(User* user)
 {
-    const std::string& nick = usr->getNickname();
-std::cout << "debug1" << std::endl;
-    // length must be 1..9
-    if (nick.empty() || nick.size() > 9)
+    // 1) Must have a non-empty nick
+    const std::string& currentNick = user->getNickname();
+    if (currentNick.empty())
         return false;
-std::cout << "debug2" << std::endl;
-    // check each character
-    for (size_t i = 0; i < nick.size(); ++i)
-    {
-        char c = nick[i];
-            // first char: must be in 'A'..'}'
-            if (!((c >= 45 && c <= 57) || (c >= 65 && c<= 125)))
-				//432 ERR_ERRONEUSNICKNAME "<nick> :Erroneus nickname"
-				{
-				std::string msg =" 432 ERR_ERRONEUSNICKNAME " + usr->getNickname() +" :Erroneous nickname\r\n";
-   			    usr->appendToSendBuffer(msg);
-				   return false;
-				}
-				
-    }
-std::cout << "debug3" << std::endl;
-    // now ensure no other user already has that nick
-    for (size_t j = 0; j < g_mappa.size(); ++j)
-    {
-        User* u = g_mappa[j];
-        if (u != usr && u->getNickname() == nick)
-		{
-			//433 ERR_NICKNAMEINUSE "<nick> :Nickname is already in use"
-				// std::string msg =" 433 ERR_NICKNAMEINUSE " + usr->getNickname() +" :Nickname is already in use\r\n";
-   			    // usr->appendToSendBuffer(msg);
-                //maybe givetempnick here?
-            return false;
-		}
-    }
-	std::cout << "debug4" << std::endl;
 
+    // 2) Truncate to 9 chars if necessary
+    std::string nick = currentNick;
+    if (nick.size() > MAX_NICK_LEN) {
+        std::string truncated = nick.substr(0, MAX_NICK_LEN);
+        user->setNickname(truncated);
+
+        // Notify about truncation
+        std::ostringstream notice;
+        notice << ":" << servername
+               << " NOTICE " << truncated
+               << " :Your nickname has been truncated to " << truncated
+               << "\r\n";
+        user->appendToSendBuffer(notice.str());
+
+        nick = truncated;
+    }
+
+    // 3) Check against every other user in g_mappa
+    for (std::vector<User*>::const_iterator it = g_mappa.begin();
+         it != g_mappa.end(); ++it)
+    {
+        User* other = *it;
+        if (other == user) 
+            continue;
+        if (other->getNickname() == nick) {
+            // Nick conflict → ERR_NICKNAMEINUSE (433)
+            std::ostringstream err;
+            err << ":" << servername
+                << " 433 " << user->getNickname()
+                << " "   << nick
+                << " :Nickname is already in use"
+                << "\r\n";
+            user->appendToSendBuffer(err.str());
+            return false;
+        }
+    }
+
+    // 4) All good
     return true;
 }
 
