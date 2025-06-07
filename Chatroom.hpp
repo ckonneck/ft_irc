@@ -69,3 +69,16 @@ class Chatroom
         int  user_limit;
 };
 
+class PrivateChatroom : public Chatroom {
+public:
+    PrivateChatroom(User* a, User* b);
+    virtual ~PrivateChatroom();
+
+    virtual void   setLimit    (int limit);
+    virtual void   unsetLimit  ();
+    virtual void   setKey      (const std::string& key);
+    virtual void   unsetKey    ();
+    virtual void   setInviteOnly(bool flag);
+    virtual void   setTopicOnlyOps(bool flag);
+
+};

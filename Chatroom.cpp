@@ -500,3 +500,33 @@ void User::leaveAllChatrooms()
     roomsThisUserIsMemberIn.clear();
 }
 
+// private chatroom (DM)
+
+static std::string makeDMName(User* x, User* y) {
+    std::string n1 = x->getNickname();
+    std::string n2 = y->getNickname();
+    if (n1 < n2) return "#dm_" + n1 + "_" + n2;
+    return "#dm_" + n2 + "_" + n1;
+}
+
+PrivateChatroom::PrivateChatroom(User* a, User* b)
+  : Chatroom(makeDMName(a,b))
+{
+    // Join and op both participants
+    addUser(a);
+    addUser(b);
+    addOperator(a);
+    addOperator(b);
+
+    // Enforce a hard limit of 2 users
+    Chatroom::setLimit(2);  // base method :contentReference[oaicite:0]{index=0}
+}
+
+PrivateChatroom::~PrivateChatroom() {}
+
+void PrivateChatroom::setLimit(int)           { /* no-op */ }
+void PrivateChatroom::unsetLimit()            { /* no-op */ }
+void PrivateChatroom::setKey(const std::string&){ /* no-op */ }
+void PrivateChatroom::unsetKey()              { /* no-op */ }
+void PrivateChatroom::setInviteOnly(bool)     { /* no-op */ }
+void PrivateChatroom::setTopicOnlyOps(bool)   { /* no-op */ }

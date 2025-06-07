@@ -680,7 +680,35 @@ void handlePrivmsg(User* curr,
     }
     else
     {
-        // TODO: private user‐to‐user messaging
+        // 1) Look up the other user
+        User* u2 = findUserByNickname(target);
+        if (!u2) {
+            curr->appendToSendBuffer(":" + servername
+                + " 401 " + curr->getNickname()
+                + " " + target
+                + " :No such nick\r\n");
+            return;
+        }
+
+        // 2) Manage a map of DM rooms, keyed by sorted pair of nicks
+        typedef std::pair<std::string,std::string> Key;
+        static std::map<Key,PrivateChatroom*> dm_map;
+        std::string n1 = curr->getNickname();
+        std::string n2 = u2->getNickname();
+        Key k = (n1 < n2) ? Key(n1, n2) : Key(n2, n1);
+        PrivateChatroom*& room = dm_map[k];
+
+        // 3) Create on first use
+        if (!room) {
+            room = new PrivateChatroom(curr, u2);
+            g_chatrooms[room->getName()] = room;
+        }
+
+        // 4) Broadcast exactly like any other chatroom
+        std::string full = ":" + curr->getNickname()
+                         + " PRIVMSG " + room->getName()
+                         + " :" + text + "\r\n";
+        room->broadcast(full, curr, fds);
     }
 }
 
