@@ -1,9 +1,7 @@
 TO DO:
 
 serverpasswort implementen
-Irssi: critical nicklist_set_host: assertion 'host != NULL' failed
-Irssi: critical g_ascii_strcasecmp: assertion 's1 != NULL' failed?????
-PRIVATE MESSAGING
+
 
 
 TO DO EMIL(Management)

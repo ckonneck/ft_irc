@@ -797,8 +797,13 @@ void handlePrivmsg(User* curr,
 
         // send to recipient
         u2->appendToSendBuffer(full);
-        // echo back so sender’s client shows it
-        curr->appendToSendBuffer(full);
+        int target_fd = u2->getFD();
+    for (size_t i = 0; i < fds.size(); ++i) {
+        if (fds[i].fd == target_fd) {
+            fds[i].events |= POLLOUT;
+            break;
+        }
+    }
     }
 }
 
