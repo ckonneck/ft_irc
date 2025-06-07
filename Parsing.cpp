@@ -652,14 +652,24 @@ void handlePrivmsg(User* curr,
                    const std::string& raw, std::vector<pollfd> &fds)
 {
     (void) fd;//in case we still need this and its fucked
-    if (tokens.size() < 3) return;
-
+     // 411 ERR_NORECIPIENT: no target given
+    if (tokens.size() < 2) {
+        curr->appendToSendBuffer(":" + servername
+            + " 411 " + curr->getNickname()
+            + " PRIVMSG :No recipient given (PRIVMSG)\r\n");
+        return;
+    }
     std::string target = tokens[1];
-    size_t pos = raw.find(" :");
-    std::string text = (pos != std::string::npos)
-                       ? raw.substr(pos + 2)
-                       : "";
 
+    // 412 ERR_NOTEXTTOSEND: no message given
+    size_t pos = raw.find(" :");
+    if (pos == std::string::npos || pos + 2 >= raw.size()) {
+        curr->appendToSendBuffer(":" + servername
+            + " 412 " + curr->getNickname()
+            + " :No text to send\r\n");
+        return;
+    }
+    std::string text = raw.substr(pos + 2);
     if (!target.empty() && target[0] == '#')
     {
         std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(target);
@@ -680,31 +690,31 @@ void handlePrivmsg(User* curr,
     }
     else
     {
-        // 1) Look up the other user
+         // 401 ERR_NOSUCHNICK: target user not found
         User* u2 = findUserByNickname(target);
         if (!u2) {
             curr->appendToSendBuffer(":" + servername
                 + " 401 " + curr->getNickname()
                 + " " + target
-                + " :No such nick\r\n");
+                + " :No such nick/channel\r\n");
             return;
         }
 
-        // 2) Manage a map of DM rooms, keyed by sorted pair of nicks
+        // Build deterministic key for the DM room
         typedef std::pair<std::string,std::string> Key;
         static std::map<Key,PrivateChatroom*> dm_map;
+
         std::string n1 = curr->getNickname();
         std::string n2 = u2->getNickname();
-        Key k = (n1 < n2) ? Key(n1, n2) : Key(n2, n1);
-        PrivateChatroom*& room = dm_map[k];
+        Key k = (n1 < n2) ? Key(n1,n2) : Key(n2,n1);
 
-        // 3) Create on first use
+        PrivateChatroom*& room = dm_map[k];
         if (!room) {
             room = new PrivateChatroom(curr, u2);
             g_chatrooms[room->getName()] = room;
         }
 
-        // 4) Broadcast exactly like any other chatroom
+        // Format and send the DM
         std::string full = ":" + curr->getNickname()
                          + " PRIVMSG " + room->getName()
                          + " :" + text + "\r\n";
