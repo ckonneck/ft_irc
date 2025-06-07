@@ -645,14 +645,14 @@ void handleJoin(User* curr,
 
     (void) fd;  // unused
 }
-
+   //(void) fd;//in case we still need this and its fucked
 void handlePrivmsg(User* curr,
-                   int fd,
+                   int /*fd*/,
                    const std::vector<std::string>& tokens,
-                   const std::string& raw, std::vector<pollfd> &fds)
+                   const std::string& raw,
+                   std::vector<pollfd>& fds)
 {
-    (void) fd;//in case we still need this and its fucked
-     // 411 ERR_NORECIPIENT: no target given
+    // 411 ERR_NORECIPIENT: no target given
     if (tokens.size() < 2) {
         curr->appendToSendBuffer(":" + servername
             + " 411 " + curr->getNickname()
@@ -670,58 +670,63 @@ void handlePrivmsg(User* curr,
         return;
     }
     std::string text = raw.substr(pos + 2);
-    if (!target.empty() && target[0] == '#')
-    {
+
+    // Build the standard IRC prefix: nick!user@host
+    std::string prefix = curr->getNickname()
+                       + "!" + curr->getUsername()
+                       + "@" + curr->getHostname();  // :contentReference[oaicite:0]{index=0}
+
+    // Channel message if target starts with '#' or '&'
+    if (!target.empty() && (target[0] == '#' || target[0] == '&')) {
+        // lookup channel
         std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(target);
-        if (it != g_chatrooms.end())
-        {
-            Chatroom* chan = it->second;
-            std::string full = ":" + curr->getNickname()
+        Chatroom* room = (it != g_chatrooms.end() ? it->second : NULL);  // NULL instead of nullptr
+
+        if (!room) {
+            // 403 ERR_NOSUCHCHANNEL
+            curr->appendToSendBuffer(":" + servername
+                + " 403 " + curr->getNickname()
+                + " " + target
+                + " :No such channel\r\n");
+        }
+        else if (!room->isMember(curr)) {
+            // 404 ERR_CANNOTSENDTOCHAN
+            curr->appendToSendBuffer(":" + servername
+                + " 404 " + curr->getNickname()
+                + " " + target
+                + " :Cannot send to channel\r\n");
+        }
+        else {
+            // broadcast to channel
+            std::string full = ":" + prefix
                              + " PRIVMSG " + target
                              + " :" + text + "\r\n";
-            chan->broadcast(full, curr, fds);
-        }
-        else
-        {
-            
-            std::string msg = "403 " + target + " :No such channel\r\n";
-            curr->appendToSendBuffer(msg);
+            room->broadcast(full, curr, fds);  // :contentReference[oaicite:1]{index=1}
         }
     }
-    else
-    {
-         // 401 ERR_NOSUCHNICK: target user not found
+    else {
+        // Direct user-to-user message
         User* u2 = findUserByNickname(target);
         if (!u2) {
+            // 401 ERR_NOSUCHNICK
             curr->appendToSendBuffer(":" + servername
                 + " 401 " + curr->getNickname()
                 + " " + target
-                + " :No such nick/channel\r\n");
+                + " :No such nick\r\n");
             return;
         }
 
-        // Build deterministic key for the DM room
-        typedef std::pair<std::string,std::string> Key;
-        static std::map<Key,PrivateChatroom*> dm_map;
-
-        std::string n1 = curr->getNickname();
-        std::string n2 = u2->getNickname();
-        Key k = (n1 < n2) ? Key(n1,n2) : Key(n2,n1);
-
-        PrivateChatroom*& room = dm_map[k];
-        if (!room) {
-            room = new PrivateChatroom(curr, u2);
-            g_chatrooms[room->getName()] = room;
-        }
-
-        // Format and send the DM
-        std::string full = ":" + curr->getNickname()
-                         + " PRIVMSG " + room->getName()
+        // format the PRIVMSG
+        std::string full = ":" + prefix
+                         + " PRIVMSG " + target
                          + " :" + text + "\r\n";
-        room->broadcast(full, curr, fds);
+
+        // send to recipient
+        u2->appendToSendBuffer(full);
+        // echo back so sender’s client shows it
+        curr->appendToSendBuffer(full);
     }
 }
-
 
 void handleInvite(User* curr,
                   const std::string& rawTargetNick,
