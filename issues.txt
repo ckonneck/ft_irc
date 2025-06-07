@@ -6,9 +6,6 @@ Irssi: critical nicklist_set_host: assertion 'host != NULL' failed
 Irssi: critical g_ascii_strcasecmp: assertion 's1 != NULL' failed?????
 PRIVATE MESSAGING
 
-add PONG;
-
-
 
 TO DO EMIL(Management)
 alles testen, alles machen, file support, chatgpt anbindung, bot, banlist, filter, 

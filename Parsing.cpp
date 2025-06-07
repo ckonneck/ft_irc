@@ -27,7 +27,7 @@ void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
 
     const std::string &cmd = tokens[0];
     if      (cmd == "PING")
-        handlePing(fd);
+        handlePing(fd, raw);
     else if (cmd == "NICK" && tokens.size() > 1)
                                  handleNick(curr, raw, fds);
   else if (cmd == "KICK" && tokens.size() > 2)
@@ -410,11 +410,20 @@ void handleModeUnknown(User* requester, char m)
 }
 
 
-void handlePing(int fd)
+void handlePing(int fd, const std::string& raw)
 {
-    const std::string resp = "PONG :localhost\r\n";
+    // Extract everything after the first space (the token)
+    size_t pos = raw.find(' ');
+    std::string token = (pos != std::string::npos)
+                      ? raw.substr(pos + 1)
+                      : servername;
+
+    // Strip any trailing CR/LF
+    token.erase(std::remove(token.begin(), token.end(), '\r'), token.end());
+    token.erase(std::remove(token.begin(), token.end(), '\n'), token.end());
+
     User *us = findUserByFD(fd);
-    us->appendToSendBuffer(resp);
+    us->appendToSendBuffer("PONG " + token + "\r\n");
 }
 
 void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)

@@ -33,7 +33,7 @@ void handleCommand(const ParsedCommand& cmd, User& client);
 // Parse and dispatch raw buffers for connected clients using pollfds
 void commandParsing(char* messageBuffer, std::vector<pollfd>& fds, size_t index);
 
-void handlePing(int fd);
+void handlePing(int fd, const std::string& raw);
 void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds);
 void handleKick(User* requester,
                 const std::string& channelName,
