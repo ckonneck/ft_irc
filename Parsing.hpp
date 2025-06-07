@@ -80,6 +80,12 @@ void handleModeOperator(Chatroom* chan, bool adding, User* requester,
                         size_t& argIdx, std::vector<pollfd>& fds,
                         std::vector<std::string>& argList);
 void handleModeUnknown(User* requester, char m);
+void handleWho(User* curr,
+               const std::vector<std::string>& tokens,
+               std::vector<pollfd>& fds);
+void handleWhois(User* curr,
+                 const std::vector<std::string>& tokens,
+                 std::vector<pollfd>& fds);
 bool uniqueNick(User* usr);
 std::string uwuTasticNick();
 #endif // PARSING_HPP

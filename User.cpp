@@ -421,6 +421,11 @@ void User::appendToSendBuffer(const std::string& data)
     _sendBuffer += data;
 }
 
+std::string User::getRealname()
+{
+    return _realname;
+}
+
 void User::consumeSendBuffer(size_t bytes)
 {
     // std::cout << "erasing sendbuffer for " << this->_FD << std::endl;

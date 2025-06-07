@@ -21,6 +21,7 @@ class User
         std::string getNickname();
 		std::string getHostname();
 		std::string getUsername();
+        std::string getRealname();
         void setNickname(const std::string &nick);
         void setHostname(const std::string &host);
         void setUser(const std::string &user_str);

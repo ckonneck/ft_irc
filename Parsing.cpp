@@ -80,9 +80,74 @@ else if (cmd == "PRIVMSG")
     //     handleQuit(fd);  still doing double deletion with this one. getting invalid read, works fine without it. 3.jun.12.01
     else if (cmd == "CAP")
         handleCap(curr, tokens);
+    else if (cmd == "WHOIS")
+        handleWhois(curr, tokens, fds);
+    else if (cmd == "WHO")
+        handleWho(curr, tokens, fds);
+}
+
+void handleWho(User* curr,
+               const std::vector<std::string>& tokens,
+               std::vector<pollfd>& fds)
+{
+    // 1) Missing target → ERR_NONICKNAMEGIVEN (same numeric as WHOIS)
+    if (tokens.size() < 2 || tokens[1].empty()) {
+        std::string reply = ":" + servername
+                          + " 431 " + curr->getNickname()
+                          + " :No nickname given\r\n";
+        curr->appendToSendBuffer(reply);
+        for (size_t i = 0; i < fds.size(); ++i) {
+            if (fds[i].fd == curr->getFD()) {
+                fds[i].events |= POLLOUT;
+                break;
+            }
+        }
+        return;
     }
 
-    
+    // 2) Build the mask (we’ll treat it as a literal nick only)
+    const std::string mask = tokens[1];
+
+    // 3) For each user in g_mappa, if nickname matches mask exactly, send a 352
+    for (std::vector<User*>::const_iterator it = g_mappa.begin();
+         it != g_mappa.end(); ++it)
+    {
+        User* u = *it;
+        if (u->getNickname() == mask) {
+            // 352 RPL_WHOREPLY
+            std::ostringstream who;
+            who << ":" << servername
+                << " 352 " << curr->getNickname()
+                << " "    << mask
+                << " "    << u->getUsername()
+                << " "    << u->getHostname()
+                << " "    << servername   // server field
+                << " "    << u->getNickname()
+                << " H :0 "             // flags + hops
+                << u->getRealname()
+                << "\r\n";
+            curr->appendToSendBuffer(who.str());
+        }
+    }
+
+    // 4) Regardless of match or not, end with 315 RPL_ENDOFWHO
+    std::ostringstream end;
+    end << ":" << servername
+        << " 315 " << curr->getNickname()
+        << " "    << mask
+        << " :End of WHO list\r\n";
+    curr->appendToSendBuffer(end.str());
+
+    // 5) Flag POLLOUT once
+    for (size_t i = 0; i < fds.size(); ++i) {
+        if (fds[i].fd == curr->getFD()) {
+            fds[i].events |= POLLOUT;
+            break;
+        }
+    }
+}
+
+
 void handlePart(User* curr,
                 const std::string& channelName,
                 std::vector<pollfd>& fds)
@@ -517,11 +582,80 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
         
         return;
     }
-    curr->setNickname(newnick);
+     curr->setNickname(newnick);
+    if (! uniqueNick(curr)) {
+        curr->setNickname(oldnick);
+        return;
+    }
     curr->HSNick(oldnick, newnick, fds);
 }
 
+void handleWhois(User* curr,
+                 const std::vector<std::string>& tokens,
+                 std::vector<pollfd>& fds)
+{
+    // 431 ERR_NONICKNAMEGIVEN: client sent "WHOIS" with no nick
+    if (tokens.size() < 2 || tokens[1].empty()) {
+        std::string reply = ":" + servername
+                          + " 431 " + curr->getNickname()
+                          + " :No nickname given\r\n";
+        curr->appendToSendBuffer(reply);
+        // flag write
+        for (size_t i = 0; i < fds.size(); ++i) {
+            if (fds[i].fd == curr->getFD()) {
+                fds[i].events |= POLLOUT;
+                break;
+            }
+        }
+        return;
+    }
 
+    // Extract the target nick
+    const std::string targetNick = tokens[1];
+    User* target = findUserByNickname(targetNick);
+    if (! target) {
+        // 401 ERR_NOSUCHNICK
+        std::string err = ":" + servername
+                        + " 401 " + curr->getNickname()
+                        + " "   + targetNick
+                        + " :No such nick\r\n";
+        curr->appendToSendBuffer(err);
+        for (size_t i = 0; i < fds.size(); ++i) {
+            if (fds[i].fd == curr->getFD()) {
+                fds[i].events |= POLLOUT;
+                break;
+            }
+        }
+        return;
+    }
+
+    // 311 RPL_WHOISUSER
+    std::ostringstream whoisUser;
+    whoisUser << ":" << servername
+              << " 311 " << curr->getNickname()
+              << " "    << target->getNickname()
+              << " "    << target->getUsername()
+              << " "    << target->getHostname()
+              << " * :" << target->getRealname()
+              << "\r\n";
+    curr->appendToSendBuffer(whoisUser.str());
+
+    // 318 RPL_ENDOFWHOIS
+    std::ostringstream endOfWhois;
+    endOfWhois << ":" << servername
+               << " 318 " << curr->getNickname()
+               << " "    << target->getNickname()
+               << " :End of /WHOIS list\r\n";
+    curr->appendToSendBuffer(endOfWhois.str());
+
+    // flag write once more
+    for (size_t i = 0; i < fds.size(); ++i) {
+        if (fds[i].fd == curr->getFD()) {
+            fds[i].events |= POLLOUT;
+            break;
+        }
+    }
+}
 
 void handleKick(User* requester,
                 const std::string& channelName,
