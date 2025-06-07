@@ -9,6 +9,7 @@
 // Forward declarations of project types
 class User;
 class Chatroom;
+const std::size_t MAX_NICK_LEN = 9;
 
 // IRC command representation
 struct ParsedCommand {

@@ -489,6 +489,18 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
     std::string oldnick = curr->getNickname();
     std::string newnick = parseNick(raw);
 
+ if (newnick.size() > MAX_NICK_LEN) {
+        std::string truncated = newnick.substr(0, MAX_NICK_LEN);
+        // Inform the user
+        std::ostringstream notice;
+        notice << ":" << servername
+               << " NOTICE " << newnick
+               << " :Your nickname has been truncated to " << truncated
+               << "\r\n";
+        curr->appendToSendBuffer(notice.str());
+        newnick = truncated;
+    }
+
     User *check = findUserByNickname(newnick);
     
     if (findUserByNickname(newnick) != NULL && check->getFD() != curr->getFD())

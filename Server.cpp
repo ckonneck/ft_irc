@@ -2,6 +2,7 @@
 
 std::string servername = "server-chan";
 std::string g_serverPassword = "";
+const std::size_t MAX_NICK_LEN = 9;
 
 void cleanupUser(User* u) {
     std::map<std::string,Chatroom*>::iterator it;
@@ -161,8 +162,20 @@ void registrationParsing(User *user, std::string msg)
     std::string nick = parseNick(msg);
     std::string host = parseHost(msg);
     std::string user_str = parseUser(msg);
-    if (!nick.empty())
-        user->setNickname(nick);
+    if (!nick.empty()) {
+    // Truncate if too long
+    if (nick.size() > MAX_NICK_LEN) {
+        std::string truncated = nick.substr(0, MAX_NICK_LEN);
+        std::ostringstream notice;
+        notice << ":" << servername
+               << " NOTICE " << nick
+               << " :Your nickname has been truncated to " << truncated
+               << "\r\n";
+        user->appendToSendBuffer(notice.str());
+        nick = truncated;
+    }
+    user->setNickname(nick);
+}
     if (!host.empty())
         user->setHostname(host);
     if (!user_str.empty())
