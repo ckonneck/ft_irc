@@ -665,12 +665,17 @@ void handleJoin(User* curr,
     }
 }
     chan->addUser(curr);
-    std::string joinMsg = ":" + curr->getNickname()
-                        + " JOIN :" + chanName
-                        + "\r\n";
-    chan->broadcast(joinMsg, NULL, fds);
-    curr->appendToSendBuffer(joinMsg);
+    std::string prefix =
+    curr->getNickname()
+  + "!" + curr->getUsername()
+  + "@" + curr->getHostname();
 
+std::string joinMsg = ":" + prefix
+                    + " JOIN :" + chanName
+                    + "\r\n";
+
+chan->broadcast(joinMsg, NULL, fds);
+curr->appendToSendBuffer(joinMsg);
     const std::vector<User*>& members = chan->getMembers();
     std::string nameList;
     for (size_t i = 0; i < members.size(); ++i) {
