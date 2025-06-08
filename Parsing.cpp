@@ -16,7 +16,7 @@
 
 extern std::string servername;
 
-void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i)
+void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, size_t i)
 {
     std::string raw(messagebuffer);
     std::vector<std::string> tokens = split(raw, ' ');

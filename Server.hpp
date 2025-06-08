@@ -41,7 +41,7 @@ void welcomemessage();
 // void messagehandling(std::vector<pollfd> &fds, size_t i);
 void validatePort(char *argv);
 bool isDigit(char *strnum);
-void commandParsing(char *messagebuffer, std::vector<pollfd> &fds, size_t i);
+void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, size_t i);
 std::vector<std::string> split(const std::string &input, char delimiter);
 User* findUserByFD(int fd);
 User* findUserByNickname(const std::string& nick);
