@@ -101,13 +101,16 @@ void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
     {
         std::string msg = user->extractLine();
         //std::cout << "Parsed line from " << fds[i].fd << ": " << msg << std::endl;
-        if (user->isRegis()== false)
+        if (!user->isRegis())
         {
             registrationParsing(user, msg);
         }
+        else{
+                commandParsing(msg, fds, i);
+        }
         continue;
     }
-    commandParsing(buffer, fds, i);
+
 }
 
 void disconnect(std::vector<pollfd> &fds, size_t &i)

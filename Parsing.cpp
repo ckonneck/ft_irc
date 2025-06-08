@@ -932,6 +932,8 @@ void handlePrivmsg(User* curr,
         // send to recipient
         u2->appendToSendBuffer(full);
         int target_fd = u2->getFD();
+        if (target_fd == curr->getFD())
+            return;
     for (size_t i = 0; i < fds.size(); ++i) {
         if (fds[i].fd == target_fd) {
             fds[i].events |= POLLOUT;
