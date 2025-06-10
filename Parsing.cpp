@@ -325,7 +325,7 @@ void handleMode(User* requester,
         requester->appendToSendBuffer(":" + servername +
             " 482 " + requester->getNickname() +
             " " + chanName +
-            " :You're not channel operator\r\n");
+            " :You're not channel1 operator\r\n");
         return;
     }
 
@@ -734,7 +734,7 @@ void handleKick(User* requester,
         std::string msg = ":" + servername +
             " 482 " + requester->getNickname() +
             " " + channelName +
-            " :You're not channel operator\r\n";
+            " :You're not channel2 operator\r\n";
         requester->appendToSendBuffer(msg);
         return;
     }
@@ -1041,7 +1041,7 @@ void handleInvite(User* curr,
             std::string msg = ":" + servername
                             + " 482 " + curr->getNickname()
                             + " " + channelName
-                            + " :You're not channel operator\r\n";
+                            + " :You're not channel3 operator\r\n";
             curr->appendToSendBuffer(msg);
             return;
         }
@@ -1116,7 +1116,7 @@ void handleInvite(User* curr,
 
 void handleTopic(User* curr, const std::string& raw, std::vector<std::string> tokens, std::vector<pollfd> &fds)
 {
-    // suppress unused warning for curr
+    (void) raw;
     Chatroom* chan = NULL;
     std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(tokens[1]);
     if (it != g_chatrooms.end())
