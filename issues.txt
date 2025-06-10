@@ -1,8 +1,13 @@
 TO DO:
 
 serverpasswort implementen
+quit doesnt't send quitmessage to channelmembers - part does tho, 
+needs to happen on quit too
 
+trying to set a topic in a private message segfaults the server.
 
+!- [server-chan] #general You're not channel operator
+^ randomly happens in chats, even though nothing was happening
 
 TO DO EMIL(Management)
 alles testen, alles machen, file support, chatgpt anbindung, bot, banlist, filter, 

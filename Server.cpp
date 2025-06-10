@@ -105,9 +105,10 @@ void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
         {
             registrationParsing(user, msg);
         }
-        else{
-                commandParsing(msg, fds, i);
-        }
+        
+        std::cout << "we in cmdparse" << std::endl;
+        commandParsing(msg, fds, i);
+        
         continue;
     }
 
