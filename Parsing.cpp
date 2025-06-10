@@ -26,34 +26,34 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
     User *curr = findUserByFD(fd);
 
     const std::string &cmd = tokens[0];
-    if      (cmd == "PING")
+    if (cmd == "PING")
         handlePing(fd, raw);
     else if (cmd == "NICK" && tokens.size() > 1)
-                                 handleNick(curr, raw, fds);
-  else if (cmd == "KICK" && tokens.size() > 2)
-{
-    std::string channelName = tokens[1];
-    std::string targetNick  = tokens[2];
+        handleNick(curr, raw, fds);
+    else if (cmd == "KICK" && tokens.size() > 2)
+    {
+        std::string channelName = tokens[1];
+        std::string targetNick  = tokens[2];
 
-    // grab optional reason after the first " :"
-    std::string reason;
-    size_t pos = raw.find(" :");
-    if (pos != std::string::npos)
-        reason = raw.substr(pos + 2);
+        // grab optional reason after the first " :"
+        std::string reason;
+        size_t pos = raw.find(" :");
+        if (pos != std::string::npos)
+            reason = raw.substr(pos + 2);
 
-    handleKick(curr, channelName, targetNick, reason, fds);
-}
-else if (cmd == "JOIN" && tokens.size() > 1)
-    handleJoin(curr, fd, tokens, fds);
-else if (cmd == "PRIVMSG")
-    handlePrivmsg(curr, fd, tokens, raw, fds);
-       else if (cmd == "INVITE" && tokens.size() > 2)
+        handleKick(curr, channelName, targetNick, reason, fds);
+    }
+    else if (cmd == "JOIN" && tokens.size() > 1)
+        handleJoin(curr, fd, tokens, fds);
+    else if (cmd == "PRIVMSG")
+        handlePrivmsg(curr, fd, tokens, raw, fds);
+    else if (cmd == "INVITE" && tokens.size() > 2)
         handleInvite(curr, tokens[1], tokens[2]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
         handleTopic(curr, raw, tokens, fds);
- else if (cmd == "MODE" && tokens.size() > 2) {
-    const std::string &target = tokens[1];
-    const std::string &flags  = tokens[2];
+    else if (cmd == "MODE" && tokens.size() > 2) {
+        const std::string &target = tokens[1];
+        const std::string &flags  = tokens[2];
 
     if (!target.empty() && target[0] == '#') {
         // channel mode
@@ -75,9 +75,14 @@ else if (cmd == "PRIVMSG")
 }
     else if (cmd == "PART" && tokens.size() > 1)
         handlePart(curr, tokens[1], fds);
-
-    // else if (cmd == "QUIT")
-    //     handleQuit(fd);  still doing double deletion with this one. getting invalid read, works fine without it. 3.jun.12.01
+    else if (cmd == "QUIT")
+    {
+        std::string reason;
+        size_t pos = raw.find(" :");
+        if (pos != std::string::npos)
+            reason = raw.substr(pos + 2);
+        handleQuit(curr ,reason, fds);
+    }
     else if (cmd == "CAP")
         handleCap(curr, tokens);
     else if (cmd == "WHOIS")
@@ -152,6 +157,7 @@ void handlePart(User* curr,
                 const std::string& channelName,
                 std::vector<pollfd>& fds)
 {
+    std::cout << "PERPARING TO PART" << std::endl;
     std::map<std::string, Chatroom*>::iterator it = g_chatrooms.find(channelName);
     if (it == g_chatrooms.end()) {
         std::string err = std::string(":")
@@ -196,6 +202,37 @@ void handlePart(User* curr,
 
     curr->appendToSendBuffer(partLine);
 }
+
+
+void handleQuit(User* curr,
+                const std::string& reason,
+                std::vector<pollfd>& fds)
+{
+    std::string prefix = curr->getNickname() 
+                       + std::string("!") 
+                       + curr->getUsername() 
+                       + std::string("@") 
+                       + curr->getHostname();
+    std::string partLine = std::string(":")
+        + prefix
+        + " QUIT "
+        + reason
+        + "\r\n";
+//find in which channels the user is
+   std::map<std::string, Chatroom*>& chatrooms = curr->getChatrooms();
+
+    for (std::map<std::string, Chatroom*>::iterator it = chatrooms.begin(); it != chatrooms.end(); ++it)
+    {
+        Chatroom* room = it->second;
+        if (room)
+        {
+            room->broadcast(partLine, curr, fds);
+        }
+    }
+    curr->leaveAllChatrooms();
+    curr->appendToSendBuffer(partLine);
+}
+
 
 void handleCap(User* curr, std::vector<std::string> tokens)
     {
@@ -550,11 +587,12 @@ void handlePing(int fd, const std::string& raw)
 
 void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
 {
-
+    std::cout << "we nickhandling" << std::endl;
     std::string oldnick = curr->getNickname();
     std::string newnick = parseNick(raw);
 
- if (newnick.size() > MAX_NICK_LEN) {
+    if (newnick.size() > MAX_NICK_LEN)
+    {
         std::string truncated = newnick.substr(0, MAX_NICK_LEN);
         // Inform the user
         std::ostringstream notice;
@@ -567,9 +605,9 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
     }
 
     User *check = findUserByNickname(newnick);
-    
+    std::cout << "we before" << std::endl;
     if (findUserByNickname(newnick) != NULL && check->getFD() != curr->getFD())
-    {
+    {std::cout << "we in" << std::endl;
         std::ostringstream oss;
         oss << "NICK " << uwuTasticNick();
         std::string temp = oss.str();
@@ -582,11 +620,13 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
         
         return;
     }
+    std::cout << "we under" << std::endl;
      curr->setNickname(newnick);
     if (! uniqueNick(curr)) {
         curr->setNickname(oldnick);
         return;
     }
+    std::cout << "we shaking hands" << std::endl;
     curr->HSNick(oldnick, newnick, fds);
 }
 
@@ -1092,12 +1132,4 @@ void handleTopic(User* curr, const std::string& raw, std::vector<std::string> to
     }
     curr->HSTopicQuery(*chan, fds);
     
-    std::cout << "DEBUGTOPIC command raw line: " << raw << std::endl;
-}
-
-void handleQuit(int fd)
-{
-    User* u = findUserByFD(fd);
-    removeUser(u);
-    std::cout << "got rid of FD " << fd << std::endl;
 }

@@ -50,7 +50,9 @@ void handleInvite(User* curr,
                   const std::string& targetNick,
                   const std::string& channelName);
 void handleTopic(User* curr, const std::string& raw, std::vector<std::string> tokens, std::vector<pollfd> &fds);
-void handleQuit(int fd);
+void handleQuit(User* curr,
+                const std::string& reason,
+                std::vector<pollfd>& fds);
 void handleMode(User* requester,
                 const std::string& chanName,
                 const std::string& flags,

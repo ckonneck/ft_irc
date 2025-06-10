@@ -1,8 +1,6 @@
 #include "Chatroom.hpp"
 #include "Server.hpp"
 
-// Maximum nickname length per RFC1459
-static const std::size_t MAX_NICK_LEN = 9;
 
 
 Chatroom::Chatroom(const std::string &name)

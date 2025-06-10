@@ -1,8 +1,6 @@
 TO DO:
 
 serverpasswort implementen
-quit doesnt't send quitmessage to channelmembers - part does tho, 
-needs to happen on quit too
 
 trying to set a topic in a private message segfaults the server.
 
@@ -15,21 +13,23 @@ webcam, bad apple
 
 semidone:
 
+
+
+
+DONE;
+
+wenn kein operator im raum ist, sollte der naechste in line operator kriegen 
+//unsicher ob das so im protokoll is oder nich.
+//nach research isses uns ueberlassen ob wir das so implementieren wollen oder nicht.
+FIXED! quit doesnt't send quitmessage to channelmembers - part does tho, 
+mode stuff seems to work now probier wilde sachen //looks good
+FIXED!	topic, but needs -t flag implementiert dass jeder topic setzen kann wenn er will.
+FIXED!  nickchange sends to all chatrooms right now, not only the ones the dude is in
+FIXED!   Mode +o doesn't work yetttt even though serverchan says it works
+FIXED!   +topic, wenn topicmode off is, kann jeder topic setzen, muss noch implementiert werden.
+
 invite, but needs further testing // confirmed
 temporary nickname. errormessage subject to change.
 also needs a different errormessage/behaviour when trying to change nick to someone who exists.
 it literally discards your previous nickname and gives you a temporary one
 //is not a problem, but invites spamming to generate a new name.
-
-wenn kein operator im raum ist, sollte der naechste in line operator kriegen 
-//unsicher ob das so im protokoll is oder nich.
-//nach research isses uns ueberlassen ob wir das so implementieren wollen oder nicht.
-
-
-DONE;
-
-mode stuff seems to work now probier wilde sachen
-FIXED!	topic, but needs -t flag implementiert dass jeder topic setzen kann wenn er will.
-FIXED!  nickchange sends to all chatrooms right now, not only the ones the dude is in
-FIXED!   Mode +o doesn't work yetttt even though serverchan says it works
-FIXED!   +topic, wenn topicmode off is, kann jeder topic setzen, muss noch implementiert werden.

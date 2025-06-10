@@ -17,6 +17,7 @@
 #include "User.hpp"
 #include <cerrno>
 #include <set>
+#include "Parsing.hpp"
 class Chatroom;
 
 extern std::map<std::string, Chatroom*> g_chatrooms;

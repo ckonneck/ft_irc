@@ -2,7 +2,6 @@
 
 std::string servername = "server-chan";
 std::string g_serverPassword = "";
-const std::size_t MAX_NICK_LEN = 9;
 
 void cleanupUser(User* u) {
     std::map<std::string,Chatroom*>::iterator it;
@@ -43,6 +42,7 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             char buffer[1024];
             ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
             if (n <= 0) {
+                //disco(fds, i);
                 disconnect(fds, i);
                 continue;
             }
@@ -106,7 +106,6 @@ void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
             registrationParsing(user, msg);
         }
         
-        std::cout << "we in cmdparse" << std::endl;
         commandParsing(msg, fds, i);
         
         continue;
@@ -119,10 +118,11 @@ void disconnect(std::vector<pollfd> &fds, size_t &i)
     int disc_fd = fds[i].fd;
     std::cout << "Client disconnected: FD " << disc_fd << std::endl;
     close(disc_fd);
+    
+    User* old = findUserByFD(disc_fd);
 
     // remove this fd from the poll list
     fds.erase(fds.begin() + i);
-    User* old = findUserByFD(disc_fd);
     if (old)
     {
         old->leaveAllChatrooms();
