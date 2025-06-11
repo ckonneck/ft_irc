@@ -3,25 +3,8 @@ TO DO:
 serverpasswort implementen
 
 
-!- [server-chan] #general You're not channel operator
-^ randomly happens in chats, even though nothing was happening
-______________________________________________________________
-Received from 4: MODE #general b
-MODE #general b
-
-Broadcast to #general: :coolcat!ckonneck@localhost MODE #general b
-  |\---/|
-  | o_o |
-   \_^_/  UwU
-
-coolcat   :server-chan 472 coolcat b :is unknown mode char to me
-:coolcat!ckonneck@localhost MODE #general b
-
-churin87   :coolcat!ckonneck@localhost MODE #general b
-
-lopo68   :coolcat!ckonneck@localhost MODE #general b
-________________________________________________________________
-
+4:04 -!- Irssi: Join to #general was synced in 188 secs
+happens after banquery goes out//might send upon join, check chris
 
 
 TO DO EMIL(Management)

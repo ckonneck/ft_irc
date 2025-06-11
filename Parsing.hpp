@@ -89,5 +89,7 @@ void handleWhois(User* curr,
                  const std::vector<std::string>& tokens,
                  std::vector<pollfd>& fds);
 bool uniqueNick(User* usr);
+void handleBanList(User *requester, const std::string &chanName);
+bool banQuery(User *requester, const std::string &chanName, const std::string &flags);
 std::string uwuTasticNick();
 #endif // PARSING_HPP

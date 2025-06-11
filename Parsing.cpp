@@ -27,7 +27,11 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
 
     const std::string &cmd = tokens[0];
     if (cmd == "PING")
-        handlePing(fd, raw);
+    {
+        //std::cout << "tokens1 is: " << tokens[1] << std::endl;
+        curr->appendToSendBuffer("PONG :" + tokens[1] +"\r\n");
+        //handlePing(fd, raw);
+    }
     else if (cmd == "NICK" && tokens.size() > 1)
         handleNick(curr, raw, fds);
     else if (cmd == "KICK" && tokens.size() > 2)
@@ -320,6 +324,9 @@ void handleMode(User* requester,
         return;
     }
 
+    if (banQuery(requester, chanName, flags) == true)
+        return;
+
     // 3) Operator check
     if (!chan->isOperator(requester)) {
         requester->appendToSendBuffer(":" + servername +
@@ -329,6 +336,7 @@ void handleMode(User* requester,
         return;
     }
 
+
     // 4) Prepare for per-letter handling
     bool adding = true;
     size_t argIdx = 3;  // first mode‐parameter index
@@ -337,10 +345,8 @@ void handleMode(User* requester,
     // Remove whitespace/newlines from flags
     std::string cleanFlags = flags;
     cleanFlags.erase(
-        std::remove_if(cleanFlags.begin(), cleanFlags.end(), isSpaceOrNewline),
-        cleanFlags.end()
-    );
-
+    std::remove_if(cleanFlags.begin(), cleanFlags.end(), isSpaceOrNewline),
+    cleanFlags.end());
     // 5) Loop over each mode character (C++98 iterator style)
     for (std::string::const_iterator it = cleanFlags.begin();
          it != cleanFlags.end(); ++it)
@@ -390,6 +396,37 @@ void handleMode(User* requester,
     }
     oss << "\r\n";
     chan->broadcast(oss.str(), NULL, fds);
+}
+
+bool banQuery(User *requester, const std::string &chanName, const std::string &flags)
+{
+    std::string cleanFlags = flags;
+    cleanFlags.erase(
+    std::remove_if(cleanFlags.begin(), cleanFlags.end(), isSpaceOrNewline),
+    cleanFlags.end());
+    for (std::string::const_iterator it = cleanFlags.begin();
+         it != cleanFlags.end(); ++it)
+    {
+        char m = *it;
+        if (m == 'b') {
+            handleBanList(requester, chanName);
+            return true;
+        }
+    }
+    return false;
+}
+
+void handleBanList(User *requester, const std::string &chanName)
+{
+    std::ostringstream oss; //test again
+    oss << ":" << "localhost"
+        << " 368 " << requester->getNickname()
+        << " " << chanName
+        << " :End of Channel Ban List"
+        << "\r\n";
+    std::cout << oss.str() << std::endl;
+    requester->appendToSendBuffer(oss.str());
+
 }
 
 
