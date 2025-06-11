@@ -2,7 +2,6 @@ TO DO:
 
 serverpasswort implementen
 
-trying to set a topic in a private message segfaults the server.
 
 !- [server-chan] #general You're not channel operator
 ^ randomly happens in chats, even though nothing was happening
@@ -36,6 +35,7 @@ semidone:
 
 DONE;
 
+FIXEDwith custom error message! trying to set a topic in a private message segfaults the server.
 wenn kein operator im raum ist, sollte der naechste in line operator kriegen 
 //unsicher ob das so im protokoll is oder nich.
 //nach research isses uns ueberlassen ob wir das so implementieren wollen oder nicht.

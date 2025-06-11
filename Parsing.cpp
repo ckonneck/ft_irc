@@ -1123,6 +1123,11 @@ void handleTopic(User* curr, const std::string& raw, std::vector<std::string> to
     {
         chan = it->second;   
     }
+    else
+    {
+        curr->appendToSendBuffer("Private messages can't have topics baka.\r\n");
+        return;
+    }
     //tokens 2 = topictoset
     // tokens 1 = channelname
     if (tokens[2] != "")
