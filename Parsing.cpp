@@ -16,6 +16,82 @@
 
 extern std::string servername;
 
+/* handle MODE <target> query (exactly 2 tokens) */
+static bool handle_mode_query(User *curr,
+                              const std::vector<std::string> &tokens)
+{
+    if (tokens.size() != 2)
+        return false;
+    const std::string &target = tokens[1];
+
+    /* --- channel query */
+    if (!target.empty() && target[0] == '#')
+    {
+        std::map<std::string, Chatroom *>::iterator it;
+        it = g_chatrooms.find(target);
+        if (it == g_chatrooms.end())
+        {
+            /* 403 No such channel */
+            curr->appendToSendBuffer(":" + servername
+                + " 403 " + curr->getNickname()
+                + " " + target
+                + " :No such channel\r\n");
+            return true;
+        }
+        Chatroom *chan = it->second;
+        if (!chan->isMember(curr))
+        {
+            /* 442 You're not on that channel */
+            curr->appendToSendBuffer(":" + servername
+                + " 442 " + curr->getNickname()
+                + " " + target
+                + " :You're not on that channel\r\n");
+            return true;
+        }
+        std::string flags;
+        if (chan->isInviteOnly())   flags.push_back('i');
+        if (chan->isTopicOnlyOps()) flags.push_back('t');
+        if (chan->hasKey())         flags.push_back('k');
+        if (chan->hasLimit())       flags.push_back('l');
+
+        std::ostringstream resp;
+        resp << ":" << servername
+             << " 324 " << curr->getNickname()
+             << " "   << target
+             << " +"   << flags;
+        if (chan->hasKey())
+            resp << " " << chan->getKey();
+        if (chan->hasLimit())
+            resp << " " << chan->getLimit();
+        resp << "\r\n";
+
+        curr->appendToSendBuffer(resp.str());
+        return true;
+    }
+    /* --- user query */
+    else if (target == curr->getNickname())
+    {
+        std::string uflags = curr->getModeFlags();
+        std::ostringstream resp;
+        resp << ":" << servername
+             << " 221 " << curr->getNickname()
+             << " +"   << uflags
+             << "\r\n";
+
+        curr->appendToSendBuffer(resp.str());
+        return true;
+    }
+    /* --- neither channel nor self */
+    /* 401 No such nick */
+    curr->appendToSendBuffer(":" + servername
+        + " 401 " + curr->getNickname()
+        + " " + target
+        + " :No such nick\r\n");
+    return true;
+}
+
+
+
 void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, size_t i)
 {
     std::string raw(messagebuffer);

@@ -22,6 +22,7 @@ class User
 		std::string getHostname();
 		std::string getUsername();
         std::string getRealname();
+		std::string getModeFlags() const;
         void setNickname(const std::string &nick);
         void setHostname(const std::string &host);
         void setUser(const std::string &user_str);

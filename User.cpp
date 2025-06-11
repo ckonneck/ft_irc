@@ -533,3 +533,13 @@ if (!user)
 
     user->removeChatroom(this->getName());
 }
+
+std::string User::getModeFlags() const {
+    std::string out;
+    // +i = invisible
+    if (this->isInvisible()) out.push_back('i');
+    // +o = server‐operator
+    if (this->_isOP)         out.push_back('o');
+    // (add more here if you support other user modes)
+    return out;
+}
