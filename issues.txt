@@ -1,10 +1,8 @@
 TO DO:
 
 serverpasswort implementen
+odd bug with nickchange if Capitalization is slightly different, we can steal nicknames. bad. check debug
 
-
-4:04 -!- Irssi: Join to #general was synced in 188 secs
-happens after banquery goes out//might send upon join, check chris
 
 
 TO DO EMIL(Management)
@@ -17,7 +15,7 @@ semidone:
 
 
 DONE;
-
+FIXED! we now syncjoin in 0 seconds
 FIXEDwith custom error message! trying to set a topic in a private message segfaults the server.
 wenn kein operator im raum ist, sollte der naechste in line operator kriegen 
 //unsicher ob das so im protokoll is oder nich.
@@ -30,6 +28,7 @@ FIXED!   Mode +o doesn't work yetttt even though serverchan says it works
 FIXED!   +topic, wenn topicmode off is, kann jeder topic setzen, muss noch implementiert werden.
 
 invite, but needs further testing // confirmed
+
 temporary nickname. errormessage subject to change.
 also needs a different errormessage/behaviour when trying to change nick to someone who exists.
 it literally discards your previous nickname and gives you a temporary one

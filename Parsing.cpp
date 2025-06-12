@@ -131,28 +131,31 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
         handleInvite(curr, tokens[1], tokens[2]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
         handleTopic(curr, raw, tokens, fds);
-    else if (cmd == "MODE" && tokens.size() > 2) {
+    else if (cmd == "MODE" && tokens.size() > 2)
+    {
         const std::string &target = tokens[1];
         const std::string &flags  = tokens[2];
 
-    if (!target.empty() && target[0] == '#') {
-        // channel mode
-        handleMode(curr, target, flags, tokens, fds);
+        if (!target.empty() && target[0] == '#') {
+            // channel mode
+            handleMode(curr, target, flags, tokens, fds);
+        }
+        else if (target == curr->getNickname()) {
+            // user mode
+            handleUserMode(curr, flags, fds);
+        }
+        else {
+            // neither channel nor self → no such nick
+            std::ostringstream err;
+            err << ":" << servername
+                << " 401 " << curr->getNickname()
+                << " "       << target
+                << " :No such nick\r\n";
+            curr->appendToSendBuffer(err.str());
+        }
     }
-    else if (target == curr->getNickname()) {
-        // user mode
-        handleUserMode(curr, flags, fds);
-    }
-    else {
-        // neither channel nor self → no such nick
-        std::ostringstream err;
-        err << ":" << servername
-            << " 401 " << curr->getNickname()
-            << " "       << target
-            << " :No such nick\r\n";
-        curr->appendToSendBuffer(err.str());
-    }
-}
+    else if (cmd == "MODE" && tokens.size() == 2)
+        handle_mode_query(curr, tokens);
     else if (cmd == "PART" && tokens.size() > 1)
         handlePart(curr, tokens[1], fds);
     else if (cmd == "QUIT")
@@ -495,7 +498,7 @@ bool banQuery(User *requester, const std::string &chanName, const std::string &f
 void handleBanList(User *requester, const std::string &chanName)
 {
     std::ostringstream oss; //test again
-    oss << ":" << "localhost"
+    oss << ":" << "server-chan"
         << " 368 " << requester->getNickname()
         << " " << chanName
         << " :End of Channel Ban List"
@@ -724,7 +727,7 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
         std::ostringstream oss;
         oss << "NICK " << uwuTasticNick();
         std::string temp = oss.str();
-        std::string err = ":localhost 433 * " + newnick + " :Nickname is already in use\r\n";
+        // std::string err = ":server-chan 433 * " + newnick + " :Nickname is already in use\r\n";
         //curr->appendToSendBuffer(err);
         curr->appendToSendBuffer("Either the nickname was already taken, or you tried to steal someone else's nickname.\r\n");
         curr->appendToSendBuffer("Doesn't matter. you get a BETTER ONE NOW\r\n");
@@ -737,7 +740,6 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
      curr->setNickname(newnick);
     if (! uniqueNick(curr)) {
         curr->setNickname(oldnick);
-        return;
     }
     std::cout << "we shaking hands" << std::endl;
     curr->HSNick(oldnick, newnick, fds);
@@ -1000,9 +1002,9 @@ curr->appendToSendBuffer(joinMsg);
                         + " :End of /NAMES list\r\n";
 
     curr->addNewMemberToChatroom(chan);
+    curr->HSTopicQuery(*chan, fds);
     curr->appendToSendBuffer(rpl_353);
     curr->appendToSendBuffer(rpl_366);
-    curr->HSTopicQuery(*chan, fds);
 
     (void) fd;  // unused
 }

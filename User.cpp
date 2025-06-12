@@ -141,16 +141,16 @@ std::string parseHost(const std::string &msg)
 
 void User::HSwelcome()
 {
-    std::string msg1 = ":localhost 001 " + this->_nickname + " :Welcome to the UWURC server " + this->_nickname + "!" + this->_username + "@" + this->_hostname + "\r\n";
+    std::string msg1 = ":server-chan 001 " + this->_nickname + " :Welcome to the UWURC server " + this->_nickname + "!" + this->_username + "@" + this->_hostname + "\r\n";
     appendToSendBuffer(msg1);
 
-    std::string msg2 = ":localhost 002 " + this->_nickname + " :Your host is UWUCHAN running version 1.0\r\n";
+    std::string msg2 = ":server-chan 002 " + this->_nickname + " :Your host is UWUCHAN running version 1.0\r\n";
     appendToSendBuffer(msg2);
 
-    std::string msg3 = ":localhost 003 " + this->_nickname + " :This server was created at " + serverStartTime() + " DA NYA\r\n";
+    std::string msg3 = ":server-chan 003 " + this->_nickname + " :This server was created at " + serverStartTime() + " DA NYA\r\n";
     appendToSendBuffer(msg3);
 
-    std::string msg4 = ":localhost 004 " + this->_nickname + " owo please don't be mean\r\n";
+    std::string msg4 = ":server-chan 004 " + this->_nickname + " owo please don't be mean\r\n";
     appendToSendBuffer(msg4);
 }
 
@@ -176,7 +176,7 @@ void User::HSNick(const std::string &oldname, const std::string &newname, std::v
 // std::cout << "[DEBUG-HSnick] &fds=" << &fds
 //               << ", first_fd=" << (fds.empty() ? -1 : fds[0].fd)
 //               << ", size=" << fds.size() << "\n";
-    std::string nickMsg = ":" + oldname + "!user@localhost NICK :" + newname + "\r\n";
+    std::string nickMsg = ":" + oldname + "!user@server-chan NICK :" + newname + "\r\n";
     appendToSendBuffer(nickMsg);//maybe this needs to go, maybe not
     std::set<int> alreadyNotifiedFDs;
     std::map<std::string, Chatroom*>::iterator it;
@@ -197,7 +197,7 @@ void User::HSNickdb(const std::string &oldname,
                   std::vector<pollfd> &fds)
 {
     std::string nickMsg = ":" + oldname
-                        + "!user@localhost NICK :" 
+                        + "!user@server-chan NICK :" 
                         + newname 
                         + "\r\n";
 
@@ -309,11 +309,11 @@ void User::HSInvite(const std::string &whotoinv)
     //check if user has invite rights i guess
     //server sends response back to the client 
     std::string channel = "yeanoidea";//parsing plss
-    std::string msg = ":localhost 341 " + this->_nickname + " " + whotoinv + " " + channel + "\r\n";
+    std::string msg = ":server-chan 341 " + this->_nickname + " " + whotoinv + " " + channel + "\r\n";
     appendToSendBuffer(msg);
 
     //server sends message to the person being invited
-    std::string msg2 = ":" + this->_nickname + "!user@localhost INVITE " + whotoinv + " :" + channel + "\r\n";
+    std::string msg2 = ":" + this->_nickname + "!user@server-chan INVITE " + whotoinv + " :" + channel + "\r\n";
     User *targetuser = findUserByNickname(whotoinv);
     targetuser->appendToSendBuffer(msg2);
 }
@@ -323,24 +323,24 @@ void User::HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds)//this is f
 {
     if (chatroom.hasTopic() == true) {
         std::string topic = chatroom.getTopic();
-        printStringHex(topic);
+        // printStringHex(topic);
         std::string setter = chatroom.getLastTopicSetter();
         std::ostringstream oss;
         oss << chatroom.getTopicTime();
         std::string timestamp = oss.str();
 
-        std::string msg332 = ":localhost 332 " + this->_nickname + " " + chatroom.getName() + " :" + topic + "\r\n";
+        std::string msg332 = ":server-chan 332 " + this->_nickname + " " + chatroom.getName() + " :" + topic + "\r\n";
         appendToSendBuffer(msg332);
 
-        std::string msg333 = ":localhost 333 " + this->_nickname + " " + chatroom.getName() + " " + setter + " " + timestamp + "\r\n";
+        std::string msg333 = ":server-chan 333 " + this->_nickname + " " + chatroom.getName() + " " + setter + " " + timestamp + "\r\n";
         appendToSendBuffer(msg333);
     } else {
 
         
-        // std::string msg = ":localhost 331 " + this->_nickname + " " + chatroom.getName() + " :No topic is set\r\n";
+        std::string msg = ":server-chan 331 " + this->_nickname + " " + chatroom.getName() + " :No topic is set\r\n";
         (void)fds;
         // chatroom.broadcastToYou(msg, this, fds);
-        //appendToSendBuffer(msg);
+        appendToSendBuffer(msg);
     }
 }
 
@@ -418,6 +418,7 @@ const std::string& User::getSendBuffer() const
 
 void User::appendToSendBuffer(const std::string& data)
 {
+
     _sendBuffer += data;
 }
 
@@ -428,7 +429,8 @@ std::string User::getRealname()
 
 void User::consumeSendBuffer(size_t bytes)
 {
-    // std::cout << "erasing sendbuffer for " << this->_FD << std::endl;
+     std::cout << "erasing sendbuffer for " << this->_nickname << std::endl;
+     std::cout << _sendBuffer << std::endl;
     _sendBuffer.erase(0, bytes);
 }
 
@@ -468,15 +470,15 @@ void removeUser(User* target) {
 void join_channel(int client_fd, const std::string& nickname, const std::string& channel) {
     // Simulate JOIN message
     User * us = findUserByFD(client_fd);
-    std::string msg1 =  ":" + nickname + "!" + nickname + "@localhost JOIN :" + channel + "\r\n";
+    std::string msg1 =  ":" + nickname + "!" + nickname + "@server-chan JOIN :" + channel + "\r\n";
     us->appendToSendBuffer(msg1);
 
     // RPL_NAMREPLY (353): list of users in channel
-    std::string msg2 = ":localhost 353 " + nickname + " = " + channel + " :" + nickname + "\r\n";
+    std::string msg2 = ":server-chan 353 " + nickname + " = " + channel + " :" + nickname + "\r\n";
     us->appendToSendBuffer(msg2);
 
     // RPL_ENDOFNAMES (366): end of names list
-    std::string msg3 = ":localhost 366 " + nickname + " " + channel + " :End of /NAMES list." + "\r\n";
+    std::string msg3 = ":server-chan 366 " + nickname + " " + channel + " :End of /NAMES list." + "\r\n";
     us->appendToSendBuffer(msg3);
 }
 
