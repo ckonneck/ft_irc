@@ -192,83 +192,6 @@ void User::HSNick(const std::string &oldname, const std::string &newname, std::v
 }
 
 
-void User::HSNickdb(const std::string &oldname,
-                  const std::string &newname,
-                  std::vector<pollfd> &fds)
-{
-    std::string nickMsg = ":" + oldname
-                        + "!user@server-chan NICK :" 
-                        + newname 
-                        + "\r\n";
-
-    std::cout << "[DEBUG] HSNick called for user fd=" 
-              << this->getFD()
-              << ", oldnick=" << oldname 
-              << ", newnick=" << newname 
-              << "\n";
-
-    // Broadcast into each room the user is actually in
-    for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin();
-         it != g_chatrooms.end();
-         ++it)
-    {
-        Chatroom* room = it->second;
-
-        // Only broadcast if this user is a member
-        const std::vector<User*>& members = room->getMembers();
-        bool in_room = false;
-        for (size_t i = 0; i < members.size(); ++i)
-        {
-            if (members[i] == this)
-            {
-                in_room = true;
-                break;
-            }
-        }
-        if (in_room)
-        {
-            std::cout << "[DEBUG] Broadcasting nick change to room "
-                      << it->first << "\n";
-            room->broadcastdb(nickMsg, this, fds);
-        }
-        else
-        {
-            std::cout << "[DEBUG] Skipping room " << it->first 
-                      << ": user not present\n";
-        }
-    }
-
-    // Also send directly to self
-    std::cout << "[DEBUG] Queuing nick change for self (fd=" 
-              << this->getFD() << ")\n";
-    appendToSendBuffer(nickMsg);
-
-    // And set POLLOUT for self
-    int my_fd = this->getFD();
-    bool found = false;
-    for (size_t i = 0; i < fds.size(); ++i)
-    {
-        if (fds[i].fd == my_fd)
-        {
-            std::cout << "[DEBUG] Setting POLLOUT on self pollfd[" 
-                      << i << "], before=" 
-                      << std::hex << fds[i].events << std::dec << "\n";
-            fds[i].events |= POLLOUT;
-            std::cout << "[DEBUG]             after=" 
-                      << std::hex << fds[i].events << std::dec << "\n";
-            found = true;
-            break;
-        }
-    }
-    if (!found)
-    {
-        std::cout << "[WARN] Could not find pollfd entry for self fd " 
-                  << my_fd << "\n";
-    }
-}
-
-
-
 User* findUserByFD(int fd)
 {
     // std::cout << "Starting search for user with FD: " << fd << std::endl;
@@ -292,6 +215,7 @@ User* findUserByFD(int fd)
 
 User* findUserByNickname(const std::string& nick)
 {
+
     for (size_t i = 0; i < g_mappa.size(); ++i)
     {
         User* user = g_mappa[i];
@@ -544,4 +468,19 @@ std::string User::getModeFlags() const {
     if (this->_isOP)         out.push_back('o');
     // (add more here if you support other user modes)
     return out;
+}
+
+
+User* findUserByNicknameInsensitive(const std::string& nick, User* self)
+{
+    std::string loweredNick = putAllLowCase(nick);
+    for (size_t i = 0; i < g_mappa.size(); ++i)
+    {
+        User* user = g_mappa[i];
+        if (user == self)
+            continue;
+        if (putAllLowCase(user->getNickname()) == loweredNick)
+            return user;
+    }
+    return NULL;
 }

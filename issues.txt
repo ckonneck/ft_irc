@@ -1,7 +1,6 @@
 TO DO:
 
 serverpasswort implementen
-odd bug with nickchange if Capitalization is slightly different, we can steal nicknames. bad. check debug
 
 
 
@@ -13,8 +12,8 @@ semidone:
 
 
 
-
 DONE;
+FIXED! odd bug with nickchange if Capitalization is slightly different, we can steal nicknames. bad. check debug
 FIXED! we now syncjoin in 0 seconds
 FIXEDwith custom error message! trying to set a topic in a private message segfaults the server.
 wenn kein operator im raum ist, sollte der naechste in line operator kriegen 

@@ -91,5 +91,6 @@ void handleWhois(User* curr,
 bool uniqueNick(User* usr);
 void handleBanList(User *requester, const std::string &chanName);
 bool banQuery(User *requester, const std::string &chanName, const std::string &flags);
+std::string putAllLowCase(const std::string& input);
 std::string uwuTasticNick();
 #endif // PARSING_HPP

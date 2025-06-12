@@ -11,12 +11,10 @@ class User
         static void newclient(int client_fd,std::vector<pollfd> &fds);
         void HSwelcome();
         void HSNick(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds);
-                void HSNickdb(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds);
 
         void HSInvite(const std::string &whotoinv);
         void HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds);
         void HSSetTopic(std::vector<std::string> tokens, Chatroom &chatroom, std::vector<pollfd> &fds);
-        void Mode(char &modeChar);
         int getFD();
         std::string getNickname();
 		std::string getHostname();
@@ -28,7 +26,6 @@ class User
         void setUser(const std::string &user_str);
         void setRegis(bool status);
         bool isRegis();
-		void sendMsg(const std::string& msg);
         void appendToBuffer(const std::string &data);
         bool hasCompleteLine() const;
         std::string extractLine();
@@ -37,8 +34,6 @@ class User
         const std::string& getSendBuffer() const;
         bool hasDataToSend() const;
         void consumeSendBuffer(size_t bytes);
-        bool get_rdyToWrite();
-        void set_rdyToWrite(bool);
         bool isPassValid() const;
         void setPassValid(bool ok);
         Chatroom* getChatroom(const std::string& name);
@@ -48,6 +43,7 @@ class User
         void leaveAllChatrooms();
         void setInvisible(bool on);
         bool isInvisible() const;
+        
         
 
     private:

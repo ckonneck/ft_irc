@@ -65,6 +65,17 @@ std::vector<std::string> split(const std::string &input, char delimiter) {
 #include <string>
 #include <cctype>
 
+std::string putAllLowCase(const std::string& input)
+{
+    std::string result = input;
+    for (size_t i = 0; i < result.length(); ++i)
+    {
+        result[i] = std::tolower(result[i]);
+    }
+    return result;
+}
+
+
 void printStringHex(const std::string& input)
 {
     for (std::string::size_type i = 0; i < input.size(); ++i) {

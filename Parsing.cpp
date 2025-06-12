@@ -720,10 +720,11 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
         newnick = truncated;
     }
 
-    User *check = findUserByNickname(newnick);
+    User *conflict = findUserByNicknameInsensitive(newnick, curr);
     std::cout << "we before" << std::endl;
-    if (findUserByNickname(newnick) != NULL && check->getFD() != curr->getFD())
-    {std::cout << "we in" << std::endl;
+    if (conflict != NULL)
+    {   
+        std::cout << "we in" << std::endl;
         std::ostringstream oss;
         oss << "NICK " << uwuTasticNick();
         std::string temp = oss.str();
@@ -744,6 +745,7 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
     std::cout << "we shaking hands" << std::endl;
     curr->HSNick(oldnick, newnick, fds);
 }
+
 
 void handleWhois(User* curr,
                  const std::vector<std::string>& tokens,
