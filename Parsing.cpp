@@ -15,6 +15,7 @@
 
 
 extern std::string servername;
+extern std::string g_serverPassword;
 
 /* handle MODE <target> query (exactly 2 tokens) */
 static bool handle_mode_query(User *curr,
@@ -135,16 +136,17 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
 		handlePass(curr, tokens);
 	
     // 2) Block any other command until PASS->NICK->USER handshake is done
-    if (!curr->isPassValid() || !curr->isRegis())
-    {
-        std::ostringstream err;
-        err << ":" << servername
-            << " 451 " << curr->getNickname()
-            << " "       << cmd
-            << " :You have not registered\r\n";
-        curr->appendToSendBuffer(err.str());
-        return;
-    }
+bool passwordRequired = !g_serverPassword.empty();
+if (passwordRequired && (!curr->isPassValid() || !curr->isRegis()))
+{
+    std::ostringstream err;
+    err << ":" << servername
+        << " 451 " << curr->getNickname()
+        << " "       << cmd
+        << " :You have not registered\r\n";
+    curr->appendToSendBuffer(err.str());
+    return;
+}
 
     if (cmd == "PING")
     {
