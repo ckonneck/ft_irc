@@ -104,13 +104,12 @@ void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
         if (!user->isRegis())
         {
             registrationParsing(user, msg);
-			continue;
         }
 		if (!(g_serverPassword == "") && user->isPassValid() == true)
         	commandParsing(msg, fds, i);
 		else
 			commandParsing(msg, fds, i);
-        
+        continue;
     }
 
 }

@@ -8,7 +8,6 @@ class Chatroom
     public:
         Chatroom(const std::string &name);
         void setTopic(const std::string &topicstring, const std::string &lastsetter);
-        void displayTopic();
 		void broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds);
         void broadcastdb(const std::string &msg, User *sender, std::vector<pollfd> &fds);
         void broadcastToYou(const std::string &msg, User *sender, std::vector<pollfd> &fds);
@@ -49,6 +48,10 @@ class Chatroom
         const std::vector<User*>& getMembers() const;
         void removeUserFromChatroom(User *user);
         void broadcastonce(const std::string &msg, User *sender, std::vector<pollfd> &fds, std::set<int>& alreadyNotifiedFDs);
+        void passOperatorOn(User *partinguser, std::vector<pollfd>& fds);
+        void checkIfEmpty();
+        bool isEmpty() const;
+
 
     private:
         time_t _topicTime;

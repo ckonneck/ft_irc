@@ -139,7 +139,10 @@ static std::set<std::string> generatedNicks;
 std::string uwuTasticNick()
 {
     static const char* syllables[] = {
-        "senpai","baka","chan","buta", "senpai", "uwu", "nya", "me", "ne", "mo", "ki", "bu", "po", "lo", "chu", "rin", "ko", "mi", "lu", "to"
+        "senpai","baka","chan","buta", "senpai", "uwu", "nya", "me", "ne", "mo",
+        "ki", "bu", "po", "lo", "chu", "rin", "ko", "mi", "lu", "to",
+        "momo","usa","neko","tama","koyu","rin","mimi","popo","fuwa","puni","ruru","piyo"
+        ,"sora","kira","shiro","moko","hono","chiro","koko","runa","nano","momoko","ame", "desu"
     };
     const int count = sizeof(syllables) / sizeof(syllables[0]);
 

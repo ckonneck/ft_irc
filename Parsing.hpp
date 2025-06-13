@@ -11,6 +11,9 @@ class User;
 class Chatroom;
 const std::size_t MAX_NICK_LEN = 9;
 
+extern std::string servername;
+extern std::string g_serverPassword;
+
 // IRC command representation
 struct ParsedCommand {
     std::string command;               // The IRC command (e.g., "PRIVMSG", "JOIN")

@@ -14,8 +14,6 @@
 #include <sstream>  
 
 
-extern std::string servername;
-extern std::string g_serverPassword;
 
 /* handle MODE <target> query (exactly 2 tokens) */
 static bool handle_mode_query(User *curr,
@@ -108,7 +106,7 @@ void handlePass(User* user, const std::vector<std::string>& tokens)
     }
 
     // ERR_PASSWDMISMATCH (464)
-    if (tokens[1] != PasswordManager::getPassword()) {
+    if (tokens[1] != g_serverPassword) {
         user->appendToSendBuffer(
             ":" + servername + " 464 * :Password incorrect\r\n");
         removeUser(user);  // fully tear down user session
@@ -118,6 +116,7 @@ void handlePass(User* user, const std::vector<std::string>& tokens)
     // PASS OK
     user->setPassValid(true);
     std::cout << "PASS VALID" << std::endl;
+    //user->appendToSendBuffer("Thanks for registering. you can now join channels."); this bricks everythign
 }
 
 
@@ -132,21 +131,22 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
 
     const std::string &cmd = tokens[0];
 
-	if (cmd == "PASS")
-		handlePass(curr, tokens);
+        // if (cmd == "PASS")
+        // 	handlePass(curr, tokens);
 	
     // 2) Block any other command until PASS->NICK->USER handshake is done
-bool passwordRequired = !g_serverPassword.empty();
-if (passwordRequired && (!curr->isPassValid() || !curr->isRegis()))
-{
-    std::ostringstream err;
-    err << ":" << servername
-        << " 451 " << curr->getNickname()
-        << " "       << cmd
-        << " :You have not registered\r\n";
-    curr->appendToSendBuffer(err.str());
-    return;
-}
+    // bool passwordRequired = !g_serverPassword.empty();
+    // std::cout << "is pass req? " << passwordRequired << std::endl;
+    // if (passwordRequired && (!curr->isPassValid() || !curr->isRegis()))
+    // {
+    //     std::ostringstream err;
+    //     err << ":" << servername
+    //         << " 451 " << curr->getNickname()
+    //         << " "       << cmd
+    //         << " :You have not registered\r\n";
+    //     curr->appendToSendBuffer(err.str());
+    //     return;
+    // }
 
     if (cmd == "PING")
     {
@@ -281,7 +281,6 @@ void handleWho(User* curr,
     }
 }
 
-
 void handlePart(User* curr,
                 const std::string& channelName,
                 std::vector<pollfd>& fds)
@@ -323,13 +322,13 @@ void handlePart(User* curr,
         + " PART "
         + channelName
         + "\r\n";
-
+    curr->appendToSendBuffer(partLine);
     chan->broadcast(partLine, curr, fds);
-
     curr->removeChatroom(channelName);
     chan->removeUser(curr);
+    chan->passOperatorOn(curr, fds);
+    chan->checkIfEmpty();
 
-    curr->appendToSendBuffer(partLine);
 }
 
 
@@ -347,21 +346,23 @@ void handleQuit(User* curr,
         + " QUIT "
         + reason
         + "\r\n";
-//find in which channels the user is
-   std::map<std::string, Chatroom*>& chatrooms = curr->getChatrooms();
 
-    for (std::map<std::string, Chatroom*>::iterator it = chatrooms.begin(); it != chatrooms.end(); ++it)
+    std::map<std::string, Chatroom*>& chatrooms = curr->getChatrooms();
+
+    for (std::map<std::string, Chatroom*>::iterator it = chatrooms.begin(); it != chatrooms.end(); )
     {
         Chatroom* room = it->second;
         if (room)
         {
+            curr->appendToSendBuffer(partLine);
             room->broadcast(partLine, curr, fds);
+            room->removeUser(curr);
+            room->passOperatorOn(curr, fds);
         }
+        chatrooms.erase(it++);
+        room->checkIfEmpty();
     }
-    curr->leaveAllChatrooms();
-    curr->appendToSendBuffer(partLine);
 }
-
 
 void handleCap(User* curr, std::vector<std::string> tokens)
     {

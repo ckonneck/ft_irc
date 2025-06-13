@@ -3,9 +3,8 @@ TO DO:
 serverpasswort implementen
 
 
-
 TO DO EMIL(Management)
-alles testen, alles machen, file support, chatgpt anbindung, bot, banlist, filter, 
+alles testen, alles machen, file support, chatgpt anbindung, bot, banlist, filter,
 webcam, bad apple
 
 semidone:
@@ -13,6 +12,7 @@ semidone:
 
 
 DONE;
+FIXED! if someone leaves the room, give op to the next person.
 FIXED! odd bug with nickchange if Capitalization is slightly different, we can steal nicknames. bad. check debug
 FIXED! we now syncjoin in 0 seconds
 FIXEDwith custom error message! trying to set a topic in a private message segfaults the server.

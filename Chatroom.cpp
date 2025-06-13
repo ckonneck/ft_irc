@@ -123,6 +123,45 @@ bool Chatroom::isOperator(User* u) const
            != operators_of_room.end();
 }
 
+void Chatroom::passOperatorOn(User *partinguser, std::vector<pollfd>& fds)
+{
+    if (this->isOperator(partinguser) == false)
+        return;
+    for (std::vector<User*>::iterator it = operators_of_room.begin(); it != operators_of_room.end(); ++it)
+    {
+        if (*it == partinguser)
+        {
+            removeOperator(partinguser);
+            break;
+        }
+    }
+    if (operators_of_room.empty())
+    {
+        // If no operators left, assign operator to first member of the room if any
+        if (!members_in_room.empty())
+        {
+            //removeUserFromChatroom(partinguser);
+            // partinguser->appendToSendBuffer
+            User* newOp = members_in_room[0];
+            // std::cout << "newop is: " << newOp->getNickname() << std::endl;
+            this->addOperator(newOp);
+            std::ostringstream msg;
+            msg << ":" << servername << " NOTICE " << this->getName()
+                << " :" << newOp->getNickname()
+                << " is now a channel operator (set by "
+                << partinguser->getNickname() << ")\r\n";
+            // printStringHex(msg.str());
+            this->broadcast(msg.str(), NULL, fds);
+            std::ostringstream modeMsg;
+            modeMsg << ":" << servername << " MODE " << this->getName() << " +o " << newOp->getNickname() << "\r\n";
+            this->broadcast(modeMsg.str(), NULL, fds);
+
+            // Optional: notify the channel that newOp is now operator
+            //this->broadcast(newOp->getNickname() + " is now an operator\r\n", NULL, fds);
+        }
+    }
+}
+
 
 User* Chatroom::findUserByNick(const std::string& nick)
 {
@@ -492,6 +531,29 @@ int Chatroom::getLimit() const {
 const std::vector<User*>& Chatroom::getMembers() const
 {
     return members_in_room;
+}
+
+void Chatroom::checkIfEmpty()
+{
+    for (std::map<std::string, Chatroom*>::iterator it = g_chatrooms.begin(); it != g_chatrooms.end(); )
+    {
+        Chatroom* room = it->second;
+        if (room->isEmpty())
+        {
+            std::cout << room->getName() << " is empty, deleting it." << std::endl;
+            delete room;
+            g_chatrooms.erase(it++);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
+bool Chatroom::isEmpty() const
+{
+    return members_in_room.empty();
 }
 
 void User::leaveAllChatrooms()

@@ -10,9 +10,11 @@
 #include <cstdlib>   
 #include "Server.hpp"
 #include "User.hpp"
+#include "Parsing.hpp"
 
 extern std::map<std::string, Chatroom*> g_chatrooms;
 extern std::vector<User*>        g_mappa;
+
 
 void cleanup(std::vector<pollfd> &fds)
 {
@@ -50,14 +52,14 @@ int main(int argc, char** argv)
                   << "Usage: /ircserv <port> <password>  pw is optional\n";
         exit(1);
     }
-
     // Validate port & set up server socket
     validatePort(argv[1]);
     // record the password that clients must PASS
 	if (argc == 3)
-    	PasswordManager::setPassword(argv[2]);
+        g_serverPassword = argv[2];
 	else
-		PasswordManager::setPassword("");
+        g_serverPassword = "";
+    std::cout << "g_pass is: " << g_serverPassword << std::endl;
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
