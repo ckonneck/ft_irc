@@ -13,10 +13,11 @@
 #include <map>
 #include <ctime>
 #include <algorithm>
-#include "Chatroom.hpp"
-#include "User.hpp"
 #include <cerrno>
 #include <set>
+#include <string>
+#include "Chatroom.hpp"
+#include "User.hpp"
 #include "Parsing.hpp"
 class Chatroom;
 
@@ -39,7 +40,6 @@ bool serverexit();
 void cleanup(std::vector<pollfd> &fds);
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd);
 void welcomemessage();
-// void messagehandling(std::vector<pollfd> &fds, size_t i);
 void validatePort(char *argv);
 bool isDigit(char *strnum);
 void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, size_t i);
@@ -48,7 +48,6 @@ User* findUserByFD(int fd);
 User* findUserByNickname(const std::string& nick);
 std::string intToString(int value);
 void removeUser(User* target);
-//void send_to_client(int client_fd, const std::string& message);
 std::string sanitize(const std::string& str);
 std::string parseNick(const std::string &msg);
 std::string parseUser(const std::string &msg);

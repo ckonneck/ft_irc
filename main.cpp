@@ -1,16 +1,4 @@
-#include <iostream>
-#include <vector>
-#include <map>
-#include <string>
-#include <poll.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>   
-#include <cstdlib>   
 #include "Server.hpp"
-#include "User.hpp"
-#include "Parsing.hpp"
 
 extern std::map<std::string, Chatroom*> g_chatrooms;
 extern std::vector<User*>        g_mappa;

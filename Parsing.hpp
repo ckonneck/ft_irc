@@ -1,9 +1,7 @@
 #ifndef PARSING_HPP
 #define PARSING_HPP
 
-#include <string>
-#include <vector>
-#include <sys/poll.h>   // for pollfd
+
 #include "Server.hpp"
 
 // Forward declarations of project types

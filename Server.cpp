@@ -8,7 +8,6 @@ void cleanupUser(User* u) {
     for (it = g_chatrooms.begin(); it != g_chatrooms.end(); ++it) {
         Chatroom* chan = it->second;
         chan->removeUser(u);
-        //maybe check if user is operator first? or switch order?
         chan->removeOperator(u);
     }
     removeUser(u);
@@ -35,14 +34,12 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             if (fds[i].fd == server_fd)
             {
                 User::newclient(server_fd, fds);
-                std::cout << "found new client" << std::endl;
                 i++;
                 continue;
             }
             char buffer[1024];
             ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
             if (n <= 0) {
-                //disco(fds, i);
                 disconnect(fds, i);
                 continue;
             }
@@ -68,15 +65,12 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 int polling(User *user, std::vector<pollfd> &fds, size_t &i)
 {
     const std::string& msg = user->getSendBuffer();
-    // debugPrintPolloutSendBuffers(fds, g_mappa);
     ssize_t sent = send(fds[i].fd, msg.c_str(), msg.size(), 0);
     if (sent > 0)
     {
         user->consumeSendBuffer(sent);
         if (!user->hasDataToSend())
         {
-            std::cout << "no more data to send " << user->getFD() << std::endl;
-            // No more to send — stop polling for write
             fds[i].events &= ~POLLOUT;
         }
         return 0;
@@ -100,7 +94,6 @@ void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
     while (user->hasCompleteLine())
     {
         std::string msg = user->extractLine();
-        //std::cout << "Parsed line from " << fds[i].fd << ": " << msg << std::endl;
         if (!user->isRegis())
         {
             registrationParsing(user, msg);

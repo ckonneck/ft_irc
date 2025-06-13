@@ -1,5 +1,4 @@
-#include "Server.hpp"
-#include <cerrno>
+#include "User.hpp"
 
 std::vector<User*> g_mappa;
 std::map<std::string, Chatroom*> g_chatrooms;
@@ -13,7 +12,7 @@ User::User(const std::string &nickname,const std::string &password)
 
 User::~User()
 {
-    std::cout << "User "<< this->_nickname <<" fucked off to somewhere else" <<std::endl;
+    std::cout << "User "<< this->_nickname <<" has been destroyed" <<std::endl;
 }
 void User::newclient(int server_fd, std::vector<pollfd> &fds)
 {
@@ -31,15 +30,11 @@ void User::newclient(int server_fd, std::vector<pollfd> &fds)
         fds.push_back(client_pollfd);
         std::cout << "New client connected: FD nr " << client_fd << "\n";
 
-        // Create a temporary user with default nickname
-        // We'll update the nickname when we receive a NICK command
         User* newUser = new User("","");
         newUser->_FD = client_fd;
         newUser->setRegis(false);
         g_mappa.push_back(newUser);
-        std::cout << "we done" <<std::endl;
 
-        // newUser->HSwelcome(client_fd);
     }
     
 
@@ -54,13 +49,6 @@ void User::setPassValid(bool ok)
 { 
     _passValid = ok; 
 }
-
-// for write() obsolete
-// void User::sendMsg(const std::string& msg)
-// {
-//     int fd = _FD;
-//     write(fd, msg.c_str(), msg.size());
-// }
 
 void User::setInvisible(bool on)
 {
@@ -178,11 +166,9 @@ void printChatrooms() {
 
 void User::HSNick(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds)
 {
-// std::cout << "[DEBUG-HSnick] &fds=" << &fds
-//               << ", first_fd=" << (fds.empty() ? -1 : fds[0].fd)
-//               << ", size=" << fds.size() << "\n";
+
     std::string nickMsg = ":" + oldname + "!user@server-chan NICK :" + newname + "\r\n";
-    appendToSendBuffer(nickMsg);//maybe this needs to go, maybe not
+    appendToSendBuffer(nickMsg);
     std::set<int> alreadyNotifiedFDs;
     std::map<std::string, Chatroom*>::iterator it;
     for (it = roomsThisUserIsMemberIn.begin(); it != roomsThisUserIsMemberIn.end(); ++it)
@@ -199,21 +185,13 @@ void User::HSNick(const std::string &oldname, const std::string &newname, std::v
 
 User* findUserByFD(int fd)
 {
-    // std::cout << "Starting search for user with FD: " << fd << std::endl;
     for (size_t i = 0; i < g_mappa.size(); ++i)
     {
         User* user = g_mappa[i];
-
-        // Debug print of nickname and FD being checked
-        // std::cout << "Checking user: " << user->getNickname()
-        //           << " (FD: " << user->getFD() << ")" << std::endl;
-
         if (user->getFD() == fd) {
-            // std::cout << "Match found: " << user->getNickname() << std::endl;
             return user;
         }
     }
-    // std::cout << "No user found for FD: " << fd << std::endl;
     return NULL;
 }
 
@@ -224,35 +202,17 @@ User* findUserByNickname(const std::string& nick)
     for (size_t i = 0; i < g_mappa.size(); ++i)
     {
         User* user = g_mappa[i];
-        std::cout << "found: " << user->getNickname() << std::endl;
         if (user->getNickname() == nick)
             return user;
     }
-    std::cout << "returning NULL" << std::endl;
     return NULL;
 }
 
 
-void User::HSInvite(const std::string &whotoinv)
-{
-    //check if user has invite rights i guess
-    //server sends response back to the client 
-    std::string channel = "yeanoidea";//parsing plss
-    std::string msg = ":server-chan 341 " + this->_nickname + " " + whotoinv + " " + channel + "\r\n";
-    appendToSendBuffer(msg);
-
-    //server sends message to the person being invited
-    std::string msg2 = ":" + this->_nickname + "!user@server-chan INVITE " + whotoinv + " :" + channel + "\r\n";
-    User *targetuser = findUserByNickname(whotoinv);
-    targetuser->appendToSendBuffer(msg2);
-}
-
-void User::HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds)//this is for when client
-//sends: /Topic #channelname
+void User::HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds)
 {
     if (chatroom.hasTopic() == true) {
         std::string topic = chatroom.getTopic();
-        // printStringHex(topic);
         std::string setter = chatroom.getLastTopicSetter();
         std::ostringstream oss;
         oss << chatroom.getTopicTime();
@@ -268,7 +228,6 @@ void User::HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds)//this is f
         
         std::string msg = ":server-chan 331 " + this->_nickname + " " + chatroom.getName() + " :No topic is set\r\n";
         (void)fds;
-        // chatroom.broadcastToYou(msg, this, fds);
         appendToSendBuffer(msg);
     }
 }
@@ -329,7 +288,7 @@ std::string User::extractLine()
         return "";
 
     std::string line = _buffer.substr(0, pos);
-    _buffer = _buffer.substr(pos + 2); // remove the processed line
+    _buffer = _buffer.substr(pos + 2);
     return line;
 }
 
@@ -358,8 +317,7 @@ std::string User::getRealname()
 
 void User::consumeSendBuffer(size_t bytes)
 {
-     std::cout << "erasing sendbuffer for " << this->_nickname << std::endl;
-     std::cout << _sendBuffer << std::endl;
+    // std::cout << _sendBuffer << std::endl;
     _sendBuffer.erase(0, bytes);
 }
 
@@ -397,16 +355,14 @@ void removeUser(User* target) {
 }
 
 void join_channel(int client_fd, const std::string& nickname, const std::string& channel) {
-    // Simulate JOIN message
+
     User * us = findUserByFD(client_fd);
     std::string msg1 =  ":" + nickname + "!" + nickname + "@server-chan JOIN :" + channel + "\r\n";
     us->appendToSendBuffer(msg1);
 
-    // RPL_NAMREPLY (353): list of users in channel
     std::string msg2 = ":server-chan 353 " + nickname + " = " + channel + " :" + nickname + "\r\n";
     us->appendToSendBuffer(msg2);
 
-    // RPL_ENDOFNAMES (366): end of names list
     std::string msg3 = ":server-chan 366 " + nickname + " " + channel + " :End of /NAMES list." + "\r\n";
     us->appendToSendBuffer(msg3);
 }
@@ -467,11 +423,8 @@ if (!user)
 
 std::string User::getModeFlags() const {
     std::string out;
-    // +i = invisible
     if (this->isInvisible()) out.push_back('i');
-    // +o = server‐operator
     if (this->_isOP)         out.push_back('o');
-    // (add more here if you support other user modes)
     return out;
 }
 

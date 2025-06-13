@@ -1,6 +1,5 @@
 #pragma once
 #include "Server.hpp"
-#include <set>
 class User;
 
 class Chatroom
@@ -9,8 +8,6 @@ class Chatroom
         Chatroom(const std::string &name);
         void setTopic(const std::string &topicstring, const std::string &lastsetter);
 		void broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds);
-        void broadcastdb(const std::string &msg, User *sender, std::vector<pollfd> &fds);
-        void broadcastToYou(const std::string &msg, User *sender, std::vector<pollfd> &fds);
 
         std::string getName();
 

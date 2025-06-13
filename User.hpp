@@ -12,7 +12,6 @@ class User
         void HSwelcome();
         void HSNick(const std::string &oldname, const std::string &newname, std::vector<pollfd> &fds);
 
-        void HSInvite(const std::string &whotoinv);
         void HSTopicQuery(Chatroom &chatroom, std::vector<pollfd> &fds);
         void HSSetTopic(std::vector<std::string> tokens, Chatroom &chatroom, std::vector<pollfd> &fds);
         int getFD();

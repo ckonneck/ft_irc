@@ -60,10 +60,6 @@ std::vector<std::string> split(const std::string &input, char delimiter) {
     return result;
 }
 
-#include <iostream>
-#include <iomanip>
-#include <string>
-#include <cctype>
 
 std::string putAllLowCase(const std::string& input)
 {

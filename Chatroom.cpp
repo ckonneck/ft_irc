@@ -1,7 +1,4 @@
 #include "Chatroom.hpp"
-#include "Server.hpp"
-
-
 
 Chatroom::Chatroom(const std::string &name)
     : _topicTime(0),
@@ -41,12 +38,10 @@ bool Chatroom::isMember(User* u) const
 
 bool uniqueNick(User* user)
 {
-    // 1) Must have a non-empty nick
     const std::string& currentNick = user->getNickname();
     if (currentNick.empty())
         return false;
 
-    // 2) Truncate to 9 chars if necessary
     std::string nick = currentNick;
     if (nick.size() > MAX_NICK_LEN) {
         std::string truncated = nick.substr(0, MAX_NICK_LEN);
@@ -63,7 +58,6 @@ bool uniqueNick(User* user)
         nick = truncated;
     }
 
-    // 3) Check against every other user in g_mappa
     for (std::vector<User*>::const_iterator it = g_mappa.begin();
          it != g_mappa.end(); ++it)
     {
@@ -71,7 +65,6 @@ bool uniqueNick(User* user)
         if (other == user) 
             continue;
         if (other->getNickname() == nick) {
-            // Nick conflict → ERR_NICKNAMEINUSE (433)
             std::ostringstream err;
             err << ":" << servername
                 << " 433 " << user->getNickname()
@@ -100,7 +93,6 @@ void Chatroom::addOperator(User* u)
 
 void Chatroom::removeOperator(User* u)
 {
-    // find returns an iterator to the element or end()
     std::vector<User*>::iterator it =
         std::find(operators_of_room.begin(),
                   operators_of_room.end(),
@@ -108,7 +100,6 @@ void Chatroom::removeOperator(User* u)
 
     if (it != operators_of_room.end()) {
         operators_of_room.erase(it);
-        // (optional) log it:
         std::cout << "User " << u->getNickname()
                   << " removed as operator from "
                   << _channelname << std::endl;
@@ -140,24 +131,19 @@ void Chatroom::passOperatorOn(User *partinguser, std::vector<pollfd>& fds)
         // If no operators left, assign operator to first member of the room if any
         if (!members_in_room.empty())
         {
-            //removeUserFromChatroom(partinguser);
-            // partinguser->appendToSendBuffer
+
             User* newOp = members_in_room[0];
-            // std::cout << "newop is: " << newOp->getNickname() << std::endl;
             this->addOperator(newOp);
             std::ostringstream msg;
             msg << ":" << servername << " NOTICE " << this->getName()
                 << " :" << newOp->getNickname()
                 << " is now a channel operator (set by "
                 << partinguser->getNickname() << ")\r\n";
-            // printStringHex(msg.str());
             this->broadcast(msg.str(), NULL, fds);
             std::ostringstream modeMsg;
             modeMsg << ":" << servername << " MODE " << this->getName() << " +o " << newOp->getNickname() << "\r\n";
             this->broadcast(modeMsg.str(), NULL, fds);
 
-            // Optional: notify the channel that newOp is now operator
-            //this->broadcast(newOp->getNickname() + " is now an operator\r\n", NULL, fds);
         }
     }
 }
@@ -292,24 +278,6 @@ std::string random_ascii_kitty()
 }
 
 
-// void Chatroom::broadcast(const std::string &msg, User *sender)old
-// {
-//     for (size_t i = 0; i < members_in_room.size(); ++i)
-//     {std::cout << members_in_room[i]->getNickname() << std::endl;
-//     }
-//         for (size_t i = 0; i < members_in_room.size(); ++i) {
-//             if (members_in_room[i] != sender) {
-//                 members_in_room[i]->appendToSendBuffer(msg);//EXPERIMENTAL
-//             }
-//         }
-//         std::cout << "Broadcast to " << this->_channelname << ": " << msg;
-//         std::cout << random_ascii_kitty() << std::endl; // UwU KITTYYYY~!! 🐱💕
-// }
-// void Chatroom::broadcastToYou(const std::string &msg, User *sender, std::vector<pollfd> &fds)
-// {
-
-// }
-
 void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds)
 {
    // 1) If there is a sender, verify they are in this channel
@@ -325,8 +293,6 @@ void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollf
         }
 
         if (!isMember) {
-            // Sender is not on this channel → ERR_NOTONCHANNEL (442)
-            // Format:  "<servername> 442 <nick> <channel> :You're not on that channel"
             std::string err = ":" + servername
                             + " 442 "
                             + sender->getNickname()
@@ -334,7 +300,6 @@ void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollf
                             + " :You're not on that channel\r\n";
             sender->appendToSendBuffer(err);
 
-            // Ensure we flag POLLOUT on sender’s fd so the client sees the error
             int sender_fd = sender->getFD();
             for (std::vector<pollfd>::size_type j = 0; j < fds.size(); ++j) {
                 if (fds[j].fd == sender_fd) {
@@ -355,7 +320,7 @@ void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollf
             {
                 member->appendToSendBuffer(msg);
                 int user_fd = members_in_room[i]->getFD();
-                for (size_t j = 0; j < fds.size(); ++j)//put debug here idk
+                for (size_t j = 0; j < fds.size(); ++j)
                 {
                     if (fds[j].fd == user_fd)
                     {
@@ -365,7 +330,7 @@ void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollf
                 }
             }
         }
-        std::cout << "Broadcast to " << this->_channelname << ": " << msg;
+        //std::cout << "Broadcast to " << this->_channelname << ": " << msg;
         std::cout << random_ascii_kitty() << std::endl; // UwU KITTYYYY~!! 🐱💕
         for (size_t i = 0; i < members_in_room.size(); ++i)
     {std::cout << members_in_room[i]->getNickname() <<"   "<< members_in_room[i]->getSendBuffer() << std::endl;}
@@ -375,8 +340,8 @@ void Chatroom::broadcast(const std::string &msg, User *sender, std::vector<pollf
 void Chatroom::broadcastonce(const std::string &msg, User *sender, std::vector<pollfd> &fds, std::set<int>& alreadyNotifiedFDs)
 {
     //just debug message, dont forget to comment out for eval
-    for (size_t i = 0; i < members_in_room.size(); ++i)
-    {std::cout << members_in_room[i]->getNickname() << std::endl;}
+    // for (size_t i = 0; i < members_in_room.size(); ++i)
+    // {std::cout << members_in_room[i]->getNickname() << std::endl;}
 
 
          for (size_t i = 0; i < members_in_room.size(); ++i)
@@ -398,78 +363,12 @@ void Chatroom::broadcastonce(const std::string &msg, User *sender, std::vector<p
                 }
             }
         }
-        std::cout << "Broadcast to " << this->_channelname << ": " << msg;
+        //std::cout << "Broadcast to " << this->_channelname << ": " << msg;
         std::cout << random_ascii_kitty() << std::endl; // UwU KITTYYYY~!! 🐱💕
             //just debug message, dont forget to comment out for eval
-        for (size_t i = 0; i < members_in_room.size(); ++i)
-    {std::cout << members_in_room[i]->getNickname() <<"   "<< members_in_room[i]->getSendBuffer() << std::endl;}
+    //     for (size_t i = 0; i < members_in_room.size(); ++i)
+    // {std::cout << members_in_room[i]->getNickname() <<"   "<< members_in_room[i]->getSendBuffer() << std::endl;}
 }
-// Chatroom::broadcast with debug logging
-void Chatroom::broadcastdb(const std::string &msg,
-                         User *sender,
-                         std::vector<pollfd> &fds)
-{
-    std::cout << "[DEBUG] Entering broadcast on channel " << this->_channelname
-              << " from sender " << sender->getNickname() << "\n";
-    
-    // List all members
-    std::cout << "[DEBUG] Members in room:\n";
-    for (size_t i = 0; i < members_in_room.size(); ++i)
-    {
-        std::cout << "  - [" << i << "] " 
-                  << members_in_room[i]->getNickname()
-                  << " (fd=" << members_in_room[i]->getFD() << ")\n";
-    }
-
-    // Send to each member except the sender
-    for (size_t i = 0; i < members_in_room.size(); ++i)
-    {
-        User* member = members_in_room[i];
-        int user_fd = member->getFD();
-        
-        if (member == sender)
-        {
-            std::cout << "[DEBUG] Skipping sender itself: " 
-                      << member->getNickname() << "\n";
-            continue;
-        }
-
-        // Queue the message
-        std::cout << "[DEBUG] Queuing message for " 
-                  << member->getNickname() 
-                  << " (fd=" << user_fd << ")\n";
-        member->appendToSendBuffer(msg);
-
-        // Find the matching pollfd and set POLLOUT
-        bool found = false;
-        for (size_t j = 0; j < fds.size(); ++j)
-        {
-            if (fds[j].fd == user_fd)
-            {
-                std::cout << "[DEBUG]   → Found pollfd[" << j << "] for "
-                          << user_fd << ", events before: " 
-                          << std::hex << fds[j].events << std::dec << "\n";
-
-                fds[j].events |= POLLOUT;
-
-                std::cout << "[DEBUG]   → events after: " 
-                          << std::hex << fds[j].events << std::dec << "\n";
-                found = true;
-                break;
-            }
-        }
-        if (!found)
-        {
-            std::cout << "[WARN] Could not find pollfd entry for fd " 
-                      << user_fd << "\n";
-        }
-    }
-
-    std::cout << "[DEBUG] Finished broadcast on " << this->_channelname 
-              << ", message: " << msg << "\n";
-    std::cout << random_ascii_kitty() << std::endl;
-}
-
 
 
 
@@ -582,14 +481,12 @@ static std::string makeDMName(User* x, User* y) {
 PrivateChatroom::PrivateChatroom(User* a, User* b)
   : Chatroom(makeDMName(a,b))
 {
-    // Join and op both participants
     addUser(a);
     addUser(b);
     addOperator(a);
     addOperator(b);
 
-    // Enforce a hard limit of 2 users
-    Chatroom::setLimit(2);  // base method :contentReference[oaicite:0]{index=0}
+    Chatroom::setLimit(2);
 }
 
 PrivateChatroom::~PrivateChatroom() {}

@@ -1,17 +1,5 @@
 #include "Parsing.hpp"
-#include "Chatroom.hpp"
-#include "User.hpp"
-#include "Chatroom.hpp"
-#include <iostream>
-#include <vector>
-#include <string>
-#include <map>
-#include <poll.h>
-#include <algorithm>
-#include "User.hpp"
-#include "Chatroom.hpp"
-#include <cstdlib> 
-#include <sstream>  
+
 
 
 
@@ -550,7 +538,7 @@ void handleBanList(User *requester, const std::string &chanName)
         << " " << chanName
         << " :End of Channel Ban List"
         << "\r\n";
-    std::cout << oss.str() << std::endl;
+    //std::cout << oss.str() << std::endl;
     requester->appendToSendBuffer(oss.str());
 
 }
@@ -750,14 +738,12 @@ void handlePing(int fd, const std::string& raw)
 
 void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
 {
-    std::cout << "we nickhandling" << std::endl;
     std::string oldnick = curr->getNickname();
     std::string newnick = parseNick(raw);
 
     if (newnick.size() > MAX_NICK_LEN)
     {
         std::string truncated = newnick.substr(0, MAX_NICK_LEN);
-        // Inform the user
         std::ostringstream notice;
         notice << ":" << servername
                << " NOTICE " << newnick
@@ -768,10 +754,8 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
     }
 
     User *conflict = findUserByNicknameInsensitive(newnick, curr);
-    std::cout << "we before" << std::endl;
     if (conflict != NULL)
     {   
-        std::cout << "we in" << std::endl;
         std::ostringstream oss;
         oss << "NICK " << uwuTasticNick();
         std::string temp = oss.str();
@@ -784,12 +768,10 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
         
         return;
     }
-    std::cout << "we under" << std::endl;
      curr->setNickname(newnick);
     if (! uniqueNick(curr)) {
         curr->setNickname(oldnick);
     }
-    std::cout << "we shaking hands" << std::endl;
     curr->HSNick(oldnick, newnick, fds);
 }
 
@@ -959,8 +941,8 @@ void handleJoin(User* curr,
         chan = new Chatroom(chanName);
         g_chatrooms[chanName] = chan;
         chan->addOperator(curr);
-        std::cout << "User: " << curr->getNickname()
-                  << " is Operator of " << chan->getName() << std::endl;
+        //std::cout << "User: " << curr->getNickname()
+         //         << " is Operator of " << chan->getName() << std::endl;
     } else {
         chan = it->second;
     }
@@ -1000,7 +982,7 @@ void handleJoin(User* curr,
             return;
         }
     }
-        std::cout << "LIMIT-TEST limit: " << chan->hasLimit() << "members" << std::endl;
+    //    std::cout << "LIMIT-TEST limit: " << chan->hasLimit() << "members" << std::endl;
         if (chan->hasLimit()) {
              const std::vector<User*>& members = chan->getMembers();
                 if (static_cast<int>(members.size()) >= chan->getLimit()) {
