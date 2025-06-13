@@ -152,6 +152,11 @@ void User::HSwelcome()
 
     std::string msg4 = ":server-chan 004 " + this->_nickname + " owo please don't be mean\r\n";
     appendToSendBuffer(msg4);
+
+	std::string msg5 = ":server-chan 005 " + this->_nickname + " enter password if set up, by typing \" /quote PASS <password>\"\r\n";
+    appendToSendBuffer(msg5);
+
+
 }
 
 std::string serverStartTime()

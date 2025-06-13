@@ -90,6 +90,34 @@ static bool handle_mode_query(User *curr,
     return true;
 }
 
+void handlePass(User* user, const std::vector<std::string>& tokens)
+{
+    // ERR_NEEDMOREPARAMS (461)
+    if (tokens.size() < 2) {
+        user->appendToSendBuffer(
+            ":" + servername + " 461 * PASS :Not enough parameters\r\n");
+        return;
+    }
+
+    // ERR_ALREADYREGISTRED (462)
+    if (user->isPassValid()) {
+        user->appendToSendBuffer(
+            ":" + servername + " 462 * :You may not re-register\r\n");
+        return;
+    }
+
+    // ERR_PASSWDMISMATCH (464)
+    if (tokens[1] != PasswordManager::getPassword()) {
+        user->appendToSendBuffer(
+            ":" + servername + " 464 * :Password incorrect\r\n");
+        removeUser(user);  // fully tear down user session
+        return;
+    }
+
+    // PASS OK
+    user->setPassValid(true);
+    std::cout << "PASS VALID" << std::endl;
+}
 
 
 void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, size_t i)
@@ -102,6 +130,22 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
     User *curr = findUserByFD(fd);
 
     const std::string &cmd = tokens[0];
+
+	if (cmd == "PASS")
+		handlePass(curr, tokens);
+	
+    // 2) Block any other command until PASS->NICK->USER handshake is done
+    if (!curr->isPassValid() || !curr->isRegis())
+    {
+        std::ostringstream err;
+        err << ":" << servername
+            << " 451 " << curr->getNickname()
+            << " "       << cmd
+            << " :You have not registered\r\n";
+        curr->appendToSendBuffer(err.str());
+        return;
+    }
+
     if (cmd == "PING")
     {
         //std::cout << "tokens1 is: " << tokens[1] << std::endl;

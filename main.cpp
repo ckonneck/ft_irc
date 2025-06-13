@@ -45,16 +45,19 @@ void cleanupChatrooms()
 
 int main(int argc, char** argv)
 {
-    if (argc != 3) {
+    if (!(argc <= 3 && argc >=2)) {
         std::cout << "invalid number of arguments.\n"
-                  << "Usage: /ircserv <port> <password>\n";
+                  << "Usage: /ircserv <port> <password>  pw is optional\n";
         exit(1);
     }
 
     // Validate port & set up server socket
     validatePort(argv[1]);
     // record the password that clients must PASS
-    PasswordManager::setPassword(argv[2]);
+	if (argc == 3)
+    	PasswordManager::setPassword(argv[2]);
+	else
+		PasswordManager::setPassword("");
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));

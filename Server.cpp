@@ -104,11 +104,13 @@ void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
         if (!user->isRegis())
         {
             registrationParsing(user, msg);
+			continue;
         }
+		if (!(g_serverPassword == "") && user->isPassValid() == true)
+        	commandParsing(msg, fds, i);
+		else
+			commandParsing(msg, fds, i);
         
-        commandParsing(msg, fds, i);
-        
-        continue;
     }
 
 }
@@ -137,31 +139,8 @@ void disconnect(std::vector<pollfd> &fds, size_t &i)
 
 void registrationParsing(User *user, std::string msg)
 {
-    // if (msg.rfind("PASS ", 0) == 0) {
-    //     if (user->isRegis()) {
-    //         user->appendToSendBuffer(
-    //             ":" + servername + " 462 * :You may not re-register\r\n"
-    //         );
-    //         return;
-    //     }
-    //     std::vector<std::string> tok = split(msg, ' ');
-    //     if (tok.size() < 2 || tok[1] != PasswordManager::getPassword()) {
-    //         user->appendToSendBuffer(
-    //             ":" + servername + " 464 * :Password incorrect\r\n"
-    //         );
-    //         removeUser(user); //raus mit dem falschpasswortler aber macht alles kaputt
-    //         return;
-    //     }
-    //     user->setPassValid(true);
-    //     std::cout << "User entered Correct Password UwU" << std::endl;
-    //     return;
-    // }
-    // if (!user->isPassValid()) {
-    //     user->appendToSendBuffer(
-    //         ":" + servername + " 451 * :You have not registered\r\n"
-    //     );
-    //     return;
-    // }
+	if (user->isRegis() == true)
+		return;
     std::cout << "WE NEW USER UP IN HERE" << std::endl;
     std::string nick = parseNick(msg);
     std::string host = parseHost(msg);
@@ -196,7 +175,8 @@ void registrationParsing(User *user, std::string msg)
 void welcomemessage()
 {
     std::cout << "server-chan has been started UwU" << std::endl;
-    std::cout << "type exit to exit UwU" << std::endl;
+    std::cout << "type exit to exit and if a PASSWORD was set" << std::endl;
+	std::cout << "enter it via \" /quote <PASSWORD>  \" UwU" << std::endl;
     std::cout << "have fun and don't be a mean cookie UwU" << std::endl;
     std::cout << std::endl;
     std::cout << "   ⠀⠀⠀⠀⡴⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⠀⠀⠀⠀⠀" << std::endl;
