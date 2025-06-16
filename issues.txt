@@ -1,6 +1,6 @@
 TO DO:
 
-serverpasswort implementen
+serverpasswort implementen testen und be iflasch rauschmeissen fehlt
 
 
 TO DO EMIL(Management)

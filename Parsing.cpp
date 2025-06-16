@@ -97,13 +97,14 @@ void handlePass(User* user, const std::vector<std::string>& tokens)
     if (tokens[1] != g_serverPassword) {
         user->appendToSendBuffer(
             ":" + servername + " 464 * :Password incorrect\r\n");
-        removeUser(user);  // fully tear down user session
-        return;
+        // fully tear down user session make disconnect() call and remove user
     }
 
     // PASS OK
-    user->setPassValid(true);
-    std::cout << "PASS VALID" << std::endl;
+    if (tokens[1] == g_serverPassword) {
+        std::cout << "PASS OK" << std::endl;
+        user->setPassValid(true);
+    }
     //user->appendToSendBuffer("Thanks for registering. you can now join channels."); this bricks everythign
 }
 
@@ -119,22 +120,22 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
 
     const std::string &cmd = tokens[0];
 
-        // if (cmd == "PASS")
-        // 	handlePass(curr, tokens);
+        if (cmd == "PASS")
+        	handlePass(curr, tokens);
 	
     // 2) Block any other command until PASS->NICK->USER handshake is done
-    // bool passwordRequired = !g_serverPassword.empty();
-    // std::cout << "is pass req? " << passwordRequired << std::endl;
-    // if (passwordRequired && (!curr->isPassValid() || !curr->isRegis()))
-    // {
-    //     std::ostringstream err;
-    //     err << ":" << servername
-    //         << " 451 " << curr->getNickname()
-    //         << " "       << cmd
-    //         << " :You have not registered\r\n";
-    //     curr->appendToSendBuffer(err.str());
-    //     return;
-    // }
+    bool passwordRequired = !g_serverPassword.empty();
+    std::cout << "is pass req? " << passwordRequired << std::endl;
+    if (passwordRequired && (!curr->isPassValid() || !curr->isRegis()))
+    {
+        std::ostringstream err;
+        err << ":" << servername
+            << " 451 " << curr->getNickname()
+            << " "       << cmd
+            << " :You have not registered\r\n";
+        curr->appendToSendBuffer(err.str());
+        return;
+    }
 
     if (cmd == "PING")
     {

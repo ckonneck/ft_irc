@@ -98,8 +98,6 @@ void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
         {
             registrationParsing(user, msg);
         }
-		if (!(g_serverPassword == "") && user->isPassValid() == true)
-        	commandParsing(msg, fds, i);
 		else
 			commandParsing(msg, fds, i);
         continue;
@@ -155,7 +153,7 @@ void registrationParsing(User *user, std::string msg)
         user->setHostname(host);
     if (!user_str.empty())
         user->setUser(user_str);
-    if(user->getNickname() != "" && user->getHostname() != "" && user->getUsername() != "")//fixed hiccups hopefully
+    if(user->getNickname() != "" && user->getHostname() != "" && user->getUsername() != "" )//fixed hiccups hopefully
     {
         user->setRegis(true);
         std::cout << "USER " << nick << " HAS BEEN ABSOLUTELY VERIFIED FOR SURE" << std::endl;
