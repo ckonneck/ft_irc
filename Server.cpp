@@ -61,7 +61,7 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
                 continue;
         }
     }
-	for (size_t j = 0; j < fds.size(); /*no j++*/)
+	for (size_t j = 0; j < fds.size();)
     {
         int fd = fds[j].fd;
         User *u = (fd >= 0 ? findUserByFD(fd) : NULL);
@@ -139,11 +139,6 @@ void disconnect(std::vector<pollfd> &fds, size_t &i)
     } else {
         std::cout << "No matching User* for FD " << disc_fd << std::endl;
     }
-
-    // 3) Prevent poll() from ever firing on this slot again
-    fds[i].fd     = -1;
-    fds[i].events = 0;
-    fds[i].revents= 0;
 
     // 4) DON’T erase() here, and don’t call cleanupUser()—
     //    that happens in your end-of-loop reaper sweep.
