@@ -97,16 +97,21 @@ void handlePass(User* user, const std::vector<std::string>& tokens)
     if (tokens[1] != g_serverPassword) {
         user->appendToSendBuffer(
             ":" + servername + " 464 * :Password incorrect\r\n");
-        // fully tear down user session make disconnect() call and remove user
+        // Disconnect user due to wrong password
+        //user->disconnect(); // <- you must implement this to clean up user and close socket
+        return;
     }
 
     // PASS OK
-    if (tokens[1] == g_serverPassword) {
-        std::cout << "PASS OK" << std::endl;
-        user->setPassValid(true);
-    }
-    //user->appendToSendBuffer("Thanks for registering. you can now join channels."); this bricks everythign
+    user->setPassValid(true);
+
+    // Optional: Send a notice to the user
+   user->appendToSendBuffer(
+        ":" + servername + " NOTICE * :Password accepted. Welcome!\r\n");
+
+    std::cout << "PASS OK by " << user->getNickname() << std::endl;
 }
+
 
 
 void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, size_t i)
@@ -122,51 +127,14 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
 
         if (cmd == "PASS")
         	handlePass(curr, tokens);
-	
-    // 2) Block any other command until PASS->NICK->USER handshake is done
-    bool passwordRequired = !g_serverPassword.empty();
-    std::cout << "is pass req? " << passwordRequired << std::endl;
-    if (passwordRequired && (!curr->isPassValid() || !curr->isRegis()))
-    {
-        std::ostringstream err;
-        err << ":" << servername
-            << " 451 " << curr->getNickname()
-            << " "       << cmd
-            << " :You have not registered\r\n";
-        curr->appendToSendBuffer(err.str());
-        return;
-    }
 
-    if (cmd == "PING")
+		    if (cmd == "PING")
     {
         //std::cout << "tokens1 is: " << tokens[1] << std::endl;
         curr->appendToSendBuffer("PONG :" + tokens[1] +"\r\n");
         //handlePing(fd, raw);
     }
-    else if (cmd == "NICK" && tokens.size() > 1)
-        handleNick(curr, raw, fds);
-    else if (cmd == "KICK" && tokens.size() > 2)
-    {
-        std::string channelName = tokens[1];
-        std::string targetNick  = tokens[2];
-
-        // grab optional reason after the first " :"
-        std::string reason;
-        size_t pos = raw.find(" :");
-        if (pos != std::string::npos)
-            reason = raw.substr(pos + 2);
-
-        handleKick(curr, channelName, targetNick, reason, fds);
-    }
-    else if (cmd == "JOIN" && tokens.size() > 1)
-        handleJoin(curr, fd, tokens, fds);
-    else if (cmd == "PRIVMSG")
-        handlePrivmsg(curr, fd, tokens, raw, fds);
-    else if (cmd == "INVITE" && tokens.size() > 2)
-        handleInvite(curr, tokens[1], tokens[2]);
-    else if (cmd == "TOPIC" && tokens.size() > 1)
-        handleTopic(curr, raw, tokens, fds);
-    else if (cmd == "MODE" && tokens.size() > 2)
+	else if (cmd == "MODE" && tokens.size() > 2)
     {
         const std::string &target = tokens[1];
         const std::string &flags  = tokens[2];
@@ -191,9 +159,7 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
     }
     else if (cmd == "MODE" && tokens.size() == 2)
         handle_mode_query(curr, tokens);
-    else if (cmd == "PART" && tokens.size() > 1)
-        handlePart(curr, tokens[1], fds);
-    else if (cmd == "QUIT")
+	    else if (cmd == "QUIT")
     {
         std::string reason;
         size_t pos = raw.find(" :");
@@ -207,6 +173,48 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
         handleWhois(curr, tokens, fds);
     else if (cmd == "WHO")
         handleWho(curr, tokens, fds);
+	
+    // 2) Block any other command until PASS->NICK->USER handshake is done
+    bool passwordRequired = !g_serverPassword.empty();
+    if (passwordRequired && (!curr->isPassValid() || !curr->isRegis()))
+    {
+        std::ostringstream err;
+        err << ":" << servername
+            << " 451 " << curr->getNickname()
+            << " "       << cmd
+            << " :You have not registered\r\n";
+        curr->appendToSendBuffer(err.str());
+        return;
+    }
+
+
+    else if (cmd == "NICK" && tokens.size() > 1)
+        handleNick(curr, raw, fds);
+    else if (cmd == "KICK" && tokens.size() > 2)
+    {
+        std::string channelName = tokens[1];
+        std::string targetNick  = tokens[2];
+
+        // grab optional reason after the first " :"
+        std::string reason;
+        size_t pos = raw.find(" :");
+        if (pos != std::string::npos)
+            reason = raw.substr(pos + 2);
+
+        handleKick(curr, channelName, targetNick, reason, fds);
+    }
+    else if (cmd == "JOIN" && tokens.size() > 1)
+        handleJoin(curr, fd, tokens, fds);
+    else if (cmd == "PRIVMSG")
+        handlePrivmsg(curr, fd, tokens, raw, fds);
+    else if (cmd == "INVITE" && tokens.size() > 2)
+        handleInvite(curr, tokens[1], tokens[2]);
+    else if (cmd == "TOPIC" && tokens.size() > 1)
+        handleTopic(curr, raw, tokens, fds);
+    
+    else if (cmd == "PART" && tokens.size() > 1)
+        handlePart(curr, tokens[1], fds);
+
 }
 
 void handleWho(User* curr,
