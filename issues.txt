@@ -1,6 +1,6 @@
 TO DO:
 
-
+on registration check for double nick
 
 
 TO DO EMIL(Management)
