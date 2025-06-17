@@ -89,6 +89,7 @@ void handleWho(User* curr,
 void handleWhois(User* curr,
                  const std::vector<std::string>& tokens,
                  std::vector<pollfd>& fds);
+void handlePass(User* user, const std::vector<std::string>& tokens, std::vector<pollfd> &fds);
 bool uniqueNick(User* usr);
 void handleBanList(User *requester, const std::string &chanName);
 bool banQuery(User *requester, const std::string &chanName, const std::string &flags);

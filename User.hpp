@@ -42,7 +42,8 @@ class User
         void leaveAllChatrooms();
         void setInvisible(bool on);
         bool isInvisible() const;
-        
+        void markDead();
+		bool isDead() const;
         
 
     private:
@@ -61,4 +62,5 @@ class User
 		std::string _auth_state;
         bool _passValid;
         bool        _invisible;
+		bool		_dead;
 };

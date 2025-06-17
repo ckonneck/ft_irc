@@ -4,7 +4,7 @@ std::vector<User*> g_mappa;
 std::map<std::string, Chatroom*> g_chatrooms;
 
 User::User(const std::string &nickname,const std::string &password) 
-    : _username(""), _nickname(nickname), _password(password), _hostname(""), _passValid(false),_invisible(false)
+    : _username(""), _nickname(nickname), _password(password), _hostname(""), _passValid(false),_invisible(false),_dead(false)
 {
     this->_isOP = false;
     std::cout << "User "<< this->_nickname <<" has been created" <<std::endl;
@@ -59,6 +59,11 @@ bool User::isInvisible() const
 {
     return _invisible;
 }
+
+void User::markDead()     { _dead = true; }
+
+bool User::isDead() const { return _dead; }
+
 
 std::string parseNick(const std::string &msg)
 {
@@ -317,7 +322,7 @@ std::string User::getRealname()
 
 void User::consumeSendBuffer(size_t bytes)
 {
-    // std::cout << _sendBuffer << std::endl;
+    std::cout <<"debug sendbuffer: " << _sendBuffer << std::endl;
     _sendBuffer.erase(0, bytes);
 }
 

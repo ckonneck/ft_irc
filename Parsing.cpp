@@ -77,7 +77,7 @@ static bool handle_mode_query(User *curr,
     return true;
 }
 
-void handlePass(User* user, const std::vector<std::string>& tokens)
+void handlePass(User* user, const std::vector<std::string>& tokens, std::vector<pollfd> &fds)
 {
     // ERR_NEEDMOREPARAMS (461)
     if (tokens.size() < 2) {
@@ -93,14 +93,24 @@ void handlePass(User* user, const std::vector<std::string>& tokens)
         return;
     }
 
-    // ERR_PASSWDMISMATCH (464)
-    if (tokens[1] != g_serverPassword) {
-        user->appendToSendBuffer(
-            ":" + servername + " 464 * :Password incorrect\r\n");
-        // Disconnect user due to wrong password
-        //user->disconnect(); // <- you must implement this to clean up user and close socket
-        return;
+// ERR_PASSWDMISMATCH (464)
+if (tokens[1] != g_serverPassword) {
+    user->appendToSendBuffer(
+        ":" + servername + " 464 * :Password incorrect\r\n");
+
+    // 1) Cache the FD before the user object can be destroyed:
+    int client_fd = user->getFD();
+
+    // 2) Find its index in the pollfd list:
+    for (size_t i = 0; i < fds.size(); ++i) {
+        if (fds[i].fd == client_fd) {
+            // 3) This will close(fd), cleanupUser(), remove from fds, etc.
+            disconnect(fds, i);
+            break;
+        }
     }
+    return;
+}
 
     // PASS OK
     user->setPassValid(true);
@@ -126,7 +136,7 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
     const std::string &cmd = tokens[0];
 
         if (cmd == "PASS")
-        	handlePass(curr, tokens);
+        	handlePass(curr, tokens, fds);
 
 		    if (cmd == "PING")
     {
