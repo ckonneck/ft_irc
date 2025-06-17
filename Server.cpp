@@ -154,18 +154,65 @@ void registrationParsing(User *user, std::string msg, std::vector<pollfd> &fds)
     std::string nick = parseNick(msg);
     std::string host = parseHost(msg);
     std::string user_str = parseUser(msg);
-    if (!nick.empty()) {
-    // Truncate if too long
+if (!nick.empty()) {
+    // 1) Check for duplicate
+    bool duplicate = false;
+    for (size_t k = 0; k < fds.size(); ++k) {
+        int fd2 = fds[k].fd;
+        if (fd2 < 0 || fd2 == user->getFD()) continue;
+        User* other = findUserByFD(fd2);
+        if (other != NULL && other->isRegis()
+            && other->getNickname() == nick)
+        {
+            duplicate = true;
+            break;
+        }
+    }
+
+        if (duplicate) {
+            // 2) Grab a fresh uwuTastic nick
+            std::string newNick = uwuTasticNick();
+
+            // 3) Inform them via NOTICE
+            std::ostringstream notice;
+            notice << ":" << servername
+                   << " NOTICE " << nick
+                   << " :Nickname “" << nick
+                   << "” is already in use – assigning “"
+                   << newNick << "”\r\n";
+            user->appendToSendBuffer(notice.str());
+
+            // 4) Tell their client to switch NICK
+            std::ostringstream nickmsg;
+            nickmsg << ":" << nick
+                    << " NICK " << newNick
+                    << "\r\n";
+            user->appendToSendBuffer(nickmsg.str());
+
+            nick = newNick;
+        }
+
+    // 5) Truncate if too long
     if (nick.size() > MAX_NICK_LEN) {
         std::string truncated = nick.substr(0, MAX_NICK_LEN);
-        std::ostringstream notice;
-        notice << ":" << servername
-               << " NOTICE " << nick
-               << " :Your nickname has been truncated to " << truncated
-               << "\r\n";
-        user->appendToSendBuffer(notice.str());
+        std::ostringstream warn;
+        warn << ":" << servername
+             << " NOTICE " << nick
+             << " :Your nickname was truncated to " << truncated
+             << "\r\n";
+        user->appendToSendBuffer(warn.str());
         nick = truncated;
     }
+
+    // 6) *Notify* the client of the new NICK
+    std::string oldnick = user->getNickname();
+    std::ostringstream nickmsg;
+    nickmsg << ":" << oldnick
+            << " NICK " << nick
+            << "\r\n";
+    user->appendToSendBuffer(nickmsg.str());
+
+    // 7) Set it internally
     user->setNickname(nick);
 }
     if (!host.empty())
