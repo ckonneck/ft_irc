@@ -1,6 +1,6 @@
 TO DO:
 
-serverpasswort implementen testen und be iflasch rauschmeissen fehlt
+
 
 
 TO DO EMIL(Management)
@@ -9,6 +9,7 @@ webcam, bad apple
 
 semidone:
 
+PASS is implemented please search for issues 
 
 
 DONE;
