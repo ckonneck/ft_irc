@@ -1,6 +1,7 @@
 TO DO:
 
 on registration check for double nick
+fix  QUIT leaks and invalid reads
 
 
 TO DO EMIL(Management)
