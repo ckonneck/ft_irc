@@ -106,22 +106,32 @@ int polling(User *user, std::vector<pollfd> &fds, size_t &i)
 
 void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
 {
+    // stash the fd so we can re-find the User even if we delete it
+    int fd = user->getFD();
+
+    // append whatever just came in
     user->appendToBuffer(std::string(buffer));
     std::cout << buffer << std::endl;
-    while (user->hasCompleteLine())
-    {
-		if (!user)
-			break;
-        std::string msg = user->extractLine();
-        if (!user->isRegis())
-        {
-            registrationParsing(user, msg, fds);
-        }
-		else
-			commandParsing(msg, fds, i);
-        continue;
-    }
 
+    // keep parsing one full line at a time,
+    // but re-lookup the User* on each iteration
+    for (;;)
+    {
+        User *u = findUserByFD(fd);
+        if (!u)               // user quit & was deleted
+            break;
+        if (!u->hasCompleteLine())  // no complete “\r\n” left
+            break;
+
+        std::string msg = u->extractLine();
+        if (!u->isRegis())
+            registrationParsing(u, msg, fds);
+        else
+            commandParsing(msg, fds, i);
+
+        // loop around — but if commandParsing deleted the user,
+        // the next findUserByFD(fd) will return nullptr and we’ll break.
+    }
 }
 void disconnect(std::vector<pollfd> &fds, size_t &i)
 {

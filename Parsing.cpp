@@ -369,6 +369,18 @@ void handleQuit(User* curr,
         chatrooms.erase(it++);
         room->checkIfEmpty();
     }
+	for (std::vector<pollfd>::iterator p = fds.begin();
+         p != fds.end();
+         ++p)
+    {
+        if (p->fd == curr->getFD())
+        {
+            ::close(p->fd);
+            fds.erase(p);
+            break;
+        }
+	}
+    removeUser(curr);
 }
 
 void handleCap(User* curr, std::vector<std::string> tokens)
