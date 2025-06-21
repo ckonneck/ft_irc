@@ -2,6 +2,7 @@ TO DO:
 
 on registration check for double nick
 fix  QUIT leaks and invalid reads
+we segfault on rare occasions where the same client disconnects and reconects or somethign like that
 
 
 TO DO EMIL(Management)
