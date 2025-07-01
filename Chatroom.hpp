@@ -6,6 +6,7 @@ class Chatroom
 {
     public:
         Chatroom(const std::string &name);
+        ~Chatroom();
         void setTopic(const std::string &topicstring, const std::string &lastsetter);
 		void broadcast(const std::string &msg, User *sender, std::vector<pollfd> &fds);
 

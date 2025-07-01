@@ -4,13 +4,8 @@ std::string servername = "server-chan";
 std::string g_serverPassword = "";
 
 void cleanupUser(User* u) {
-    std::map<std::string,Chatroom*>::iterator it;
-    for (it = g_chatrooms.begin(); it != g_chatrooms.end(); ++it) {
-        Chatroom* chan = it->second;
-        chan->removeUser(u);
-        chan->removeOperator(u);
-    }
-    removeUser(u);
+    if (u)
+        removeUser(u);
 }
 
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
@@ -18,6 +13,8 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
     for (size_t i = 0; i < fds.size(); i++)
     {
         User *user = findUserByFD(fds[i].fd);
+        if (user && user->isDead())
+            continue;
         if (fds[i].revents & POLLIN) 
         {
 			 // Handle input from server terminal
@@ -40,7 +37,13 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             char buffer[1024];
             ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
             if (n <= 0) {
-                disconnect(fds, i);
+                        // client hung up or error → just close & mark dead, defer erase
+        {
+            int fd = fds[i].fd;
+            ::close(fd);
+            if (User *u = findUserByFD(fd))
+                u->markDead();
+        }
                 continue;
             }
             buffer[n] = '\0';
@@ -68,7 +71,7 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
 
         if (u && u->isDead())
         {
-            // safe to delete now that we're not in the middle of parsing
+            ::close(fds[j].fd);
             cleanupUser(u);
             fds.erase(fds.begin() + j);
         }
@@ -133,27 +136,35 @@ void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
         // the next findUserByFD(fd) will return nullptr and we’ll break.
     }
 }
-void disconnect(std::vector<pollfd> &fds, size_t &i)
+// void disconnect(std::vector<pollfd> &fds, size_t &i)
+// {
+//     int disc_fd = fds[i].fd;
+//     std::cout << "Client disconnected: FD " << disc_fd << std::endl;
+
+//     // 1) Close the socket immediately
+//     close(disc_fd);
+
+//     // 2) Mark the User dead (will be cleaned up in the sweep phase)
+//     if (User* old = findUserByFD(disc_fd)) {
+//         old->markDead();
+//         // optionally detach from chatrooms now
+//         old->leaveAllChatrooms();
+//     } else {
+//         std::cout << "No matching User* for FD " << disc_fd << std::endl;
+//     }
+
+//     // 4) DON’T erase() here, and don’t call cleanupUser()—
+//     //    that happens in your end-of-loop reaper sweep.
+// }
+void disconnect(std::vector<pollfd>& fds, size_t index)
 {
-    int disc_fd = fds[i].fd;
-    std::cout << "Client disconnected: FD " << disc_fd << std::endl;
+    int fd = fds[index].fd;
+    ::close(fd);
 
-    // 1) Close the socket immediately
-    close(disc_fd);
-
-    // 2) Mark the User dead (will be cleaned up in the sweep phase)
-    if (User* old = findUserByFD(disc_fd)) {
-        old->markDead();
-        // optionally detach from chatrooms now
-        old->leaveAllChatrooms();
-    } else {
-        std::cout << "No matching User* for FD " << disc_fd << std::endl;
-    }
-
-    // 4) DON’T erase() here, and don’t call cleanupUser()—
-    //    that happens in your end-of-loop reaper sweep.
+    User* user = findUserByFD(fd);
+    if (user)
+        user->markDead();
 }
-
 
 void registrationParsing(User *user, std::string msg, std::vector<pollfd> &fds)
 {

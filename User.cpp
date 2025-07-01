@@ -352,11 +352,11 @@ void removeUser(User* target) {
 
     std::vector<User*>::iterator uit
         = std::find(g_mappa.begin(), g_mappa.end(), target);
-        if (uit != g_mappa.end())
-        {
-        delete *uit;
-        g_mappa.erase(uit);
-    }
+        if (uit != g_mappa.end()) {
+            // remove user from global map, then delete the User
+            g_mappa.erase(uit);
+            delete target;
+        }
 }
 
 void join_channel(int client_fd, const std::string& nickname, const std::string& channel) {

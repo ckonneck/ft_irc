@@ -35,7 +35,7 @@ private:
 
 int polling(User *user, std::vector<pollfd> &fds, size_t &i);
 void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i);
-void disconnect(std::vector<pollfd> &fds, size_t &i);
+void disconnect(std::vector<pollfd> &fds, size_t i);
 bool serverexit();
 void cleanup(std::vector<pollfd> &fds);
 void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd);

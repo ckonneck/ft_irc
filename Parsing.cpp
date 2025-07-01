@@ -94,21 +94,20 @@ void handlePass(User* user, const std::vector<std::string>& tokens, std::vector<
     }
 
 // ERR_PASSWDMISMATCH (464)
-if (tokens[1] != g_serverPassword) {
-    user->appendToSendBuffer(
-        ":" + servername + " 464 * :Password incorrect\r\n");
+if (tokens[1] != g_serverPassword)
+{
+    user->appendToSendBuffer("464 ... :Password incorrect\r\n");
 
-    // 1) Cache the FD before the user object can be destroyed:
     int client_fd = user->getFD();
-
-    // 2) Find its index in the pollfd list:
-    for (size_t i = 0; i < fds.size(); ++i) {
-        if (fds[i].fd == client_fd) {
-            // 3) This will close(fd), cleanupUser(), remove from fds, etc.
-            disconnect(fds, i);
+    for (size_t j = 0; j < fds.size(); ++j)
+    {
+        if (fds[j].fd == client_fd)
+        {
+            ::close(fds[j].fd);  // just close it
             break;
         }
     }
+    user->markDead();
     return;
 }
 
@@ -376,11 +375,10 @@ void handleQuit(User* curr,
         if (p->fd == curr->getFD())
         {
             ::close(p->fd);
-            fds.erase(p);
             break;
         }
 	}
-    removeUser(curr);
+   curr->markDead();
 }
 
 void handleCap(User* curr, std::vector<std::string> tokens)

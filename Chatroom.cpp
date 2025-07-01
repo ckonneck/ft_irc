@@ -21,6 +21,11 @@ Chatroom::Chatroom(const std::string &name)
 
 }
 
+Chatroom::~Chatroom() {
+    members_in_room.clear();
+    invited_to_room.clear();
+}
+
 bool Chatroom::isInvited(User* u) const {
     return std::find(invited_to_room.begin(),
                      invited_to_room.end(),

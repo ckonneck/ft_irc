@@ -20,12 +20,18 @@ fclean: clean
 
 re: fclean all
 
-sanitize:
-	$(MAKE) CFLAGS="$(CFLAGS) -fsanitize=address -fsanitize=undefined" all
+sanitize: fclean
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -g" all
+
+asan: fclean
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -fsanitize=address -fno-omit-frame-pointer -g" all
+
+ubsan: fclean
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -fsanitize=undefined -fno-omit-frame-pointer -g" all
 
 # valgrind rule
 valgrind: $(NAME)
-		valgrind --leak-check=full --track-origins=yes ./$(NAME) $(ARGS)
+		valgrind --leak-check=full --track-origins=yes ./$(NAME) 6667 bla
 		
 # extra options: --verbose --show-leak-kinds=all --log-file=valgrind-out.txt
 #norminette rule
