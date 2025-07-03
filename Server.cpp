@@ -3,6 +3,8 @@
 std::string servername = "server-chan";
 std::string g_serverPassword = "";
 
+
+
 void cleanupUser(User* u) {
     if (u)
         removeUser(u);

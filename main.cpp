@@ -1,7 +1,11 @@
 #include "Server.hpp"
+#include <csignal>
 
 extern std::map<std::string, Chatroom*> g_chatrooms;
 extern std::vector<User*>        g_mappa;
+
+static std::vector<pollfd>* g_fds_ptr    = NULL;
+static int                  g_server_fd = -1;
 
 
 void cleanup(std::vector<pollfd> &fds)
@@ -22,7 +26,6 @@ void cleanupUsers()
     g_mappa.clear();
 }
 
-
 void cleanupChatrooms()
 {
     for (std::map<std::string, Chatroom*>::iterator cit = g_chatrooms.begin();
@@ -32,6 +35,28 @@ void cleanupChatrooms()
     }
     g_chatrooms.clear();
 }
+
+static void signalHandler(int /*signum*/) {
+    if (g_fds_ptr) {
+        // close all fds…
+        cleanup(*g_fds_ptr);
+        // free the vector’s internal buffer (C++98-compatible)
+        std::vector<pollfd> empty;
+        empty.swap(*g_fds_ptr);
+    }
+    cleanupUsers();
+    cleanupChatrooms();
+    if (g_server_fd != -1) {
+        close(g_server_fd);
+    }
+    std::exit(0);
+}
+
+
+
+
+
+
 
 int main(int argc, char** argv)
 {
@@ -51,6 +76,18 @@ int main(int argc, char** argv)
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	g_server_fd = server_fd;
+	struct sigaction ignore_sa = {};
+    ignore_sa.sa_handler = SIG_IGN;
+    sigaction(SIGPIPE, &ignore_sa, NULL);
+
+    // install our cleanup handler for INT/TERM
+    struct sigaction sa = {};
+    sa.sa_handler = signalHandler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT,  &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
 
     sockaddr_in addr;
     addr.sin_family      = AF_INET;
@@ -72,6 +109,8 @@ int main(int argc, char** argv)
     //           << ", size=" << fds.size() << "\n";
     bool running = true;
     welcomemessage();
+
+	g_fds_ptr = &fds;
 
     // Main event loop
     while (running) {

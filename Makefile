@@ -31,7 +31,7 @@ ubsan: fclean
 
 # valgrind rule
 valgrind: $(NAME)
-		valgrind --leak-check=full --track-origins=yes ./$(NAME) 6667 bla
+		valgrind --leak-check=full --show-leak-kinds=all ./$(NAME) 6667
 		
 # extra options: --verbose --show-leak-kinds=all --log-file=valgrind-out.txt
 #norminette rule

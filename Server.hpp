@@ -59,3 +59,4 @@ void printStringHex(const std::string& str);
 std::string extractAfterHashBlock(const std::vector<std::string>& words);
 std::string serverStartTime();
 User* findUserByNicknameInsensitive(const std::string& nick, User* self);
+
