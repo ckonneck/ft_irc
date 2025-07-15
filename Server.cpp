@@ -38,14 +38,14 @@ void serverloop(std::vector<pollfd> &fds, bool &running, int &server_fd)
             }
             char buffer[1024];
             ssize_t n = recv(fds[i].fd, buffer, sizeof(buffer) - 1, 0);
-            if (n <= 0) {
-                        // client hung up or error → just close & mark dead, defer erase
-        {
-            int fd = fds[i].fd;
-            ::close(fd);
-            if (User *u = findUserByFD(fd))
-                u->markDead();
-        }
+            if (n <= 0)
+            {
+                {
+                    int fd = fds[i].fd;
+                    ::close(fd);
+                    if (User *u = findUserByFD(fd))
+                        u->markDead();
+                }
                 continue;
             }
             buffer[n] = '\0';
@@ -138,26 +138,7 @@ void leParse(User *user, char *buffer, std::vector<pollfd> &fds, size_t &i)
         // the next findUserByFD(fd) will return nullptr and we’ll break.
     }
 }
-// void disconnect(std::vector<pollfd> &fds, size_t &i)
-// {
-//     int disc_fd = fds[i].fd;
-//     std::cout << "Client disconnected: FD " << disc_fd << std::endl;
 
-//     // 1) Close the socket immediately
-//     close(disc_fd);
-
-//     // 2) Mark the User dead (will be cleaned up in the sweep phase)
-//     if (User* old = findUserByFD(disc_fd)) {
-//         old->markDead();
-//         // optionally detach from chatrooms now
-//         old->leaveAllChatrooms();
-//     } else {
-//         std::cout << "No matching User* for FD " << disc_fd << std::endl;
-//     }
-
-//     // 4) DON’T erase() here, and don’t call cleanupUser()—
-//     //    that happens in your end-of-loop reaper sweep.
-// }
 void disconnect(std::vector<pollfd>& fds, size_t index)
 {
     int fd = fds[index].fd;
@@ -201,7 +182,7 @@ if (!nick.empty()) {
             notice << ":" << servername
                    << " NOTICE " << nick
                    << " :Nickname “" << nick
-                   << "” is already in use – assigning “"
+                   << "” is already in use - assigning “"
                    << newNick << "”\r\n";
             user->appendToSendBuffer(notice.str());
 

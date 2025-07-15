@@ -1,8 +1,5 @@
 #include "Parsing.hpp"
 
-
-
-
 /* handle MODE <target> query (exactly 2 tokens) */
 static bool handle_mode_query(User *curr,
                               const std::vector<std::string> &tokens)
@@ -68,7 +65,6 @@ static bool handle_mode_query(User *curr,
         curr->appendToSendBuffer(resp.str());
         return true;
     }
-    /* --- neither channel nor self */
     /* 401 No such nick */
     curr->appendToSendBuffer(":" + servername
         + " 401 " + curr->getNickname()
@@ -134,30 +130,24 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
 
     const std::string &cmd = tokens[0];
 
-        if (cmd == "PASS")
-        	handlePass(curr, tokens, fds);
-
-		    if (cmd == "PING")
+    if (cmd == "PASS")
     {
-        //std::cout << "tokens1 is: " << tokens[1] << std::endl;
+        handlePass(curr, tokens, fds);
+    }
+	if (cmd == "PING")
+    {
         curr->appendToSendBuffer("PONG :" + tokens[1] +"\r\n");
-        //handlePing(fd, raw);
     }
 	else if (cmd == "MODE" && tokens.size() > 2)
     {
         const std::string &target = tokens[1];
         const std::string &flags  = tokens[2];
 
-        if (!target.empty() && target[0] == '#') {
-            // channel mode
+        if (!target.empty() && target[0] == '#')
             handleMode(curr, target, flags, tokens, fds);
-        }
-        else if (target == curr->getNickname()) {
-            // user mode
+        else if (target == curr->getNickname())
             handleUserMode(curr, flags, fds);
-        }
         else {
-            // neither channel nor self → no such nick
             std::ostringstream err;
             err << ":" << servername
                 << " 401 " << curr->getNickname()
@@ -209,7 +199,6 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
         size_t pos = raw.find(" :");
         if (pos != std::string::npos)
             reason = raw.substr(pos + 2);
-
         handleKick(curr, channelName, targetNick, reason, fds);
     }
     else if (cmd == "JOIN" && tokens.size() > 1)
@@ -220,17 +209,14 @@ void commandParsing(const std::string &messagebuffer, std::vector<pollfd> &fds, 
         handleInvite(curr, tokens[1], tokens[2]);
     else if (cmd == "TOPIC" && tokens.size() > 1)
         handleTopic(curr, raw, tokens, fds);
-    
     else if (cmd == "PART" && tokens.size() > 1)
         handlePart(curr, tokens[1], fds);
-
 }
 
 void handleWho(User* curr,
                const std::vector<std::string>& tokens,
                std::vector<pollfd>& fds)
 {
-    // 1) Missing target → ERR_NONICKNAMEGIVEN (same numeric as WHOIS)
     if (tokens.size() < 2 || tokens[1].empty()) {
         std::string reply = ":" + servername
                           + " 431 " + curr->getNickname()
@@ -245,10 +231,8 @@ void handleWho(User* curr,
         return;
     }
 
-    // 2) Build the mask (we’ll treat it as a literal nick only)
     const std::string mask = tokens[1];
 
-    // 3) For each user in g_mappa, if nickname matches mask exactly, send a 352
     for (std::vector<User*>::const_iterator it = g_mappa.begin();
          it != g_mappa.end(); ++it)
     {
@@ -475,7 +459,7 @@ void handleMode(User* requester,
         requester->appendToSendBuffer(":" + servername +
             " 482 " + requester->getNickname() +
             " " + chanName +
-            " :You're not channel1 operator\r\n");
+            " :You're not channel operator\r\n");
         return;
     }
 
@@ -490,7 +474,6 @@ void handleMode(User* requester,
     cleanFlags.erase(
     std::remove_if(cleanFlags.begin(), cleanFlags.end(), isSpaceOrNewline),
     cleanFlags.end());
-    // 5) Loop over each mode character (C++98 iterator style)
     for (std::string::const_iterator it = cleanFlags.begin();
          it != cleanFlags.end(); ++it)
     {
@@ -757,7 +740,6 @@ void handlePing(int fd, const std::string& raw)
                       ? raw.substr(pos + 1)
                       : servername;
 
-    // Strip any trailing CR/LF
     token.erase(std::remove(token.begin(), token.end(), '\r'), token.end());
     token.erase(std::remove(token.begin(), token.end(), '\n'), token.end());
 
@@ -788,8 +770,6 @@ void handleNick(User* curr, const std::string& raw, std::vector<pollfd> &fds)
         std::ostringstream oss;
         oss << "NICK " << uwuTasticNick();
         std::string temp = oss.str();
-        // std::string err = ":server-chan 433 * " + newnick + " :Nickname is already in use\r\n";
-        //curr->appendToSendBuffer(err);
         curr->appendToSendBuffer("Either the nickname was already taken, or you tried to steal someone else's nickname.\r\n");
         curr->appendToSendBuffer("Doesn't matter. you get a BETTER ONE NOW\r\n");
         curr->setNickname(parseNick(temp));
@@ -877,9 +857,12 @@ void handleKick(User* requester,
                 const std::string& targetNick,
                 const std::string& reason, std::vector<pollfd> &fds)
 {
+    std::map<std::string,Chatroom*>::iterator mit = g_chatrooms.find(channelName);
+    Chatroom* chan = mit->second;
+    User* victim = chan->findUserByNick(targetNick);
+
+
     // 1) find channel in the global map
-    std::map<std::string,Chatroom*>::iterator mit
-        = g_chatrooms.find(channelName);
     if (mit == g_chatrooms.end())
     {
         // 403 = ERR_NOSUCHCHANNEL
@@ -890,7 +873,6 @@ void handleKick(User* requester,
         requester->appendToSendBuffer(msg);
         return;
     }
-    Chatroom* chan = mit->second;
 
     // 2) Not on channel? 442 ERR_NOTONCHANNEL
     if (!chan->isMember(requester))
@@ -909,13 +891,23 @@ void handleKick(User* requester,
         std::string msg = ":" + servername +
             " 482 " + requester->getNickname() +
             " " + channelName +
-            " :You're not channel2 operator\r\n";
+            " :You're not channel operator\r\n";
         requester->appendToSendBuffer(msg);
         return;
     }
 
     // 4) Look up the victim
-    User* victim = chan->findUserByNick(targetNick);
+    
+    if (requester == victim)
+    {
+        std::string msg = ":" + servername +
+            " 442 " + requester->getNickname() +
+            " " + channelName +
+            " :You can't kick yourself.\r\n";
+        requester->appendToSendBuffer(msg);
+        return;
+    }
+
     if (victim == NULL)
     {
         // 441 ERR_USERNOTINCHANNEL
@@ -1216,7 +1208,7 @@ void handleInvite(User* curr,
             std::string msg = ":" + servername
                             + " 482 " + curr->getNickname()
                             + " " + channelName
-                            + " :You're not channel3 operator\r\n";
+                            + " :You're not channel operator\r\n";
             curr->appendToSendBuffer(msg);
             return;
         }

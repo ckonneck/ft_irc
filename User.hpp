@@ -45,7 +45,6 @@ class User
         void markDead();
 		bool isDead() const;
         
-
     private:
         bool _rdyToWrite;
         std::string _sendBuffer;

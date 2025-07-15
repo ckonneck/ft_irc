@@ -72,7 +72,7 @@ int main(int argc, char** argv)
         g_serverPassword = argv[2];
 	else
         g_serverPassword = "";
-    std::cout << "g_pass is: " << g_serverPassword << std::endl;
+    // std::cout << "g_pass is: " << g_serverPassword << std::endl;
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     int opt = 1;
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));

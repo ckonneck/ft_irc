@@ -2,19 +2,9 @@
 
 void validatePort(char *argv)
 {
-    if(isDigit(argv) == true)
+    if(isValidPortRange(argv))
     {
-        int len = strlen(argv);
-        if(len >= 1 && len <= 5)
-        {
-            std::cout << "you chose port " << argv << std::endl;
-        }
-        else
-        {
-            std::cout << "invalid port, choose one between 1 and 65535." << std::endl;
-            std::cout << "btw, 6667 works best." << std::endl;
-            exit(1);
-        }
+        std::cout << "you chose port " << argv << std::endl;
     }
     else
     {
@@ -35,6 +25,16 @@ bool isDigit(char *strnum)
 	}
 	return true;
 }
+
+bool isValidPortRange(char *argv)
+{
+    if (!isDigit(argv))
+        return false;
+    
+    int port = std::atoi(argv);
+    return (port >= 1 && port <= 65535);
+}
+
 std::string intToString(int value)
 {
     std::ostringstream oss;
